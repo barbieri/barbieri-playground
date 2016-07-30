@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE pkgmetadata SYSTEM "http://www.gentoo.org/dtd/metadata.dtd">
+<pkgmetadata>
+        <maintainer>
+                <email>barbieri@gmail.com</email>
+                <name>Gustavo Sverzut Barbieri</name>
+        </maintainer>
+	<use>
+		<flag name="ethernet">Enable ethernet support.</flag>
+		<flag name="google">Enable Google Public DNS support.</flag>
+		<flag name="ntpd">Use <pkg>net-misc/ntp</pkg> for nptd plugin.</flag>
+		<flag name="ofono">Use <pkg>net-misc/ofono</pkg> for telephony support.</flag>
+		<flag name="openvpn">Use <pkg>net-misc/openvpn</pkg> for openvpn support.</flag>
+		<flag name="tools">Enable testing tools.</flag>
+		<flag name="vpnc">Use <pkg>net-misc/vpnc</pkg> for cisco VPN support.</flag>
+		<flag name="wimax">Use <pkg>net-wireless/wimax</pkg> for WiMAX support.</flag>
+	</use>
+</pkgmetadata>

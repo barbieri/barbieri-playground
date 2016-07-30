@@ -1,0 +1,363 @@
+; -*- mode: lisp -*-
+
+(custom-set-variables
+ ;; custom-set-variables was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(auto-compression-mode t nil (jka-compr))
+ '(blink-cursor-mode nil)
+ '(c-default-style (quote ((c-mode . "cc-mode") (java-mode . "java") (other . "gnu"))))
+ '(case-fold-search t)
+ '(column-number-mode t)
+ '(cscope-database-file "/home/gustavo/Development/cscope.out")
+ '(current-language-environment "UTF-8")
+ '(default-input-method "rfc1345")
+ '(global-font-lock-mode t nil (font-lock))
+ '(indent-tabs-mode nil)
+ '(indicate-empty-lines t)
+ '(inhibit-startup-screen t)
+ '(ispell-program-name "aspell")
+ '(iswitchb-mode t)
+ '(menu-bar-mode nil)
+ '(mmm-global-mode (quote maybe) nil (mmm-mode))
+ '(mouse-wheel-mode t nil (mwheel))
+ '(require-final-newline t)
+ '(safe-local-variable-values (quote ((encoding . utf-8) (mmm-classes . edje-lua) (todo-categories "Personal") (todo-categories "Personal"))))
+ '(save-place t nil (saveplace))
+ '(scroll-bar-mode nil)
+ '(semanticdb-default-system-save-directory "/home/gustavo/.semantic.db" t)
+ '(show-paren-mode t nil (paren))
+ '(show-trailing-whitespace t)
+ '(sort-fold-case t t)
+ '(speedbar-frame-parameters (quote ((minibuffer) (width . 20) (border-width . 0) (menu-bar-lines . 0) (tool-bar-lines . 0) (unsplittable . t) (set-background-color "black"))))
+ '(tab-width 8)
+ '(tool-bar-mode nil nil (tool-bar))
+ '(transient-mark-mode t)
+ '(uniquify-buffer-name-style (quote forward) nil (uniquify))
+ '(version-control nil)
+ '(x-stretch-cursor t))
+(custom-set-faces
+ ;; custom-set-faces was added by Custom.
+ ;; If you edit it by hand, you could mess it up, so be careful.
+ ;; Your init file should contain only one such instance.
+ ;; If there is more than one, they won't work right.
+ '(default ((t (:inherit nil :stipple nil :background "#303030" :foreground "#d9d9d9" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 90 :width normal :foundry "xos4" :family "terminus"))))
+ '(background "blue")
+ '(diff-added ((t (:inherit diff-changed-face :foreground "#00ff00"))))
+ '(diff-added-face ((t (:inherit diff-changed-face :foreground "#00ff00"))) t)
+ '(diff-changed ((t (:foreground "#ffff00"))))
+ '(diff-changed-face ((t (:foreground "#ffff00"))) t)
+ '(diff-file-header ((t (:background "grey20" :foreground "wheat" :weight bold))))
+ '(diff-file-header-face ((t (:background "grey20" :foreground "wheat" :weight bold))) t)
+ '(diff-function ((t (:inherit diff-context-face :foreground "#00ffff"))))
+ '(diff-function-face ((t (:inherit diff-context-face :foreground "#00ffff"))) t)
+ '(diff-header ((((class color) (background dark)) (:background "grey20" :foreground "grey75"))))
+ '(diff-header-face ((((class color) (background dark)) (:background "grey20" :foreground "grey75"))) t)
+ '(diff-hunk-header ((t (:inherit diff-header-face :foreground "#ff00ff"))))
+ '(diff-hunk-header-face ((t (:inherit diff-header-face :foreground "#ff00ff"))) t)
+ '(diff-removed ((t (:inherit diff-changed-face :foreground "#ff0000"))))
+ '(diff-removed-face ((t (:inherit diff-changed-face :foreground "#ff0000"))) t)
+ '(font-latex-sectioning-5-face ((((class color) (background dark)) (:inherit fixed-pitch :foreground "yellow" :weight bold))))
+ '(highlight ((t (:background "CornflowerBlue"))))
+ '(list-mode-item-selected ((t (:background "gold"))))
+ '(makefile-space-face ((t (:background "wheat"))) t)
+ '(mmm-default-submode-face ((t (:background "gray15"))))
+ '(mode-line ((t (:background "gray10" :foreground "#e9e9b0"))))
+ '(mode-line-inactive ((t (:inherit mode-line :foreground "#666666" :box (:line-width -1 :color "grey30") :weight light))))
+ '(paren-match ((t (:background "cyan"))))
+ '(region ((t (:background "#005577"))))
+ '(semantic-highlight-edits-face ((((class color) (background dark)) (:background "#222200"))))
+ '(show-paren-match ((t (:foreground "black" :background "cyan"))))
+ '(show-paren-mismatch ((((class color)) (:foreground "white" :background "red"))))
+ '(speedbar-button-face ((((class color) (background dark)) (:foreground "green4"))))
+ '(speedbar-directory-face ((((class color) (background dark)) (:foreground "khaki"))))
+ '(speedbar-file-face ((((class color) (background dark)) (:foreground "cyan"))))
+ '(speedbar-tag-face ((((class color) (background dark)) (:foreground "Springgreen"))))
+ '(which-func ((((class color) (min-colors 88) (background dark)) (:foreground "#00ffff"))))
+ '(widget-field ((((class grayscale color) (background light)) (:background "DarkBlue")))))
+
+(defun re-read-current-file ()
+  (interactive)
+  (find-file buffer-file-truename))
+
+(defun search-word-under-cursor ()
+  "Performs a nonincremental-search-forward. The word at or near point
+   is the word to search for."
+  (interactive)
+  (let ((word (current-word)))
+    (nonincremental-search-forward word)))
+
+(defun whitespace-toggle-verbose ()
+  "Toggle verbosity of whitespace-mode"
+  (interactive)
+  (whitespace-toggle-options '(spaces newlines space-mark newline-mark)))
+
+ (defun kill-other-buffers ()
+   "Kill all other buffers."
+   (interactive)
+   (mapc 'kill-buffer (delq (current-buffer) (buffer-list))))
+
+(global-set-key [(M delete)] 'delete-region)
+(global-set-key "\M-g" 'goto-line)
+(global-set-key [f1] 'manual-entry)
+(global-set-key [f2] 'save-buffer)
+(global-set-key [f3] 'search-word-under-cursor)
+(global-set-key [f4] 'find-file)
+(global-set-key [f5] 'compile)
+(global-set-key [f6] 'ff-find-other-file)
+(global-set-key [f7] 're-read-current-file)
+(global-set-key [f9] 'whitespace-toggle-verbose)
+(global-set-key [(shift f1)] 'cscope-find-this-symbol)
+(global-set-key [(shift f2)] 'cscope-find-global-definition)
+(global-set-key [(shift f3)] 'cscope-find-functions-calling-this-function)
+(global-set-key [(shift f4)] 'cscope-find-egrep-pattern)
+(global-set-key [(shift f5)] 'cscope-find-this-file)
+(global-set-key [(shift f6)] 'cscope-find-this-text-string)
+(global-set-key [(shift f7)] 'cscope-find-files-including-file)
+(global-set-key [(shift f9)] 'cscope-prev-symbol)
+(global-set-key [(shift f10)] 'cscope-next-symbol)
+(global-set-key [(shift f11)] 'cscope-prev-file)
+(global-set-key [(shift f12)] 'cscope-next-file)
+(global-set-key [(shift prior)] 'previous-multiframe-window)
+(global-set-key [(shift next)] 'next-multiframe-window)
+
+(global-set-key [(control tab)] 'bs-cycle-next)
+(global-set-key [(control prior)] 'previous-multiframe-window)
+(global-set-key [(control next)] 'next-multiframe-window)
+
+(setq org-directory "~/Documents/org")
+(setq org-mobile-inbox-for-pull "~/Documents/org/flagged.org")
+(setq org-mobile-directory "~/Dropbox/MobileOrg")
+
+(global-set-key "\C-cl" 'org-store-link)
+(global-set-key "\C-ca" 'org-agenda)
+(global-set-key "\C-cb" 'org-iswitchb)
+(global-set-key [f11] 'git-status)
+
+(c-add-style
+ "e17"
+ '("gnu"
+   (indent-tabs-mode . nil)
+   (tab-width . 8)
+   (c-offsets-alist
+    .
+    ((defun-block-intro . 3)
+     (statement-block-intro . 3)
+     (case-label . 1)
+     (statement-case-intro . 3)
+     (inclass . 3)
+     ))))
+
+(c-add-style
+ "linux4"
+ '("linux"
+   (indent-tabs-mode . nil)
+   (tab-width . 8)
+   (c-basic-offset . 4)))
+
+(c-add-style
+ "linux2"
+ '("linux"
+   (indent-tabs-mode . nil)
+   (tab-width . 8)
+   (c-basic-offset . 2)))
+
+(c-add-style
+ "webkit"
+ '((c-tab-always-indent . f)
+   (indent-tabs-mode . nil)
+   (tab-width . 8)
+   (c-basic-offset . 4)
+   (c-offsets-alist
+    .
+    ((innamespace . 0)
+     (inline-open . 0)
+     (label . 0)
+     (statement-cont . +)))))
+
+(c-add-style
+ "e-detour"
+ '("java"
+   (indent-tabs-mode . t)
+   (tab-width . 4)
+   (c-basic-offset . 4)
+   (c-offsets-alist
+    .
+    ((defun-block-intro . 4)
+     (statement-case-intro . 4)))))
+
+(defun evas-c-mode-hooks ()
+  (let ((path (buffer-file-name)))
+    (cond
+     ((string-match "/svn/e" path) (c-set-style "e17")
+                                   (whitespace-toggle-verbose))
+     )
+    )
+  )
+(add-hook 'c-mode-common-hook 'evas-c-mode-hooks)
+
+(defun profusion-c-mode-hooks ()
+  (let ((path (buffer-file-name)))
+    (cond
+     ((string-match "guarana" path) (c-set-style "linux4"))
+     ((string-match "evasive" path) (c-set-style "linux4"))
+     )
+    )
+  )
+(add-hook 'c-mode-common-hook 'profusion-c-mode-hooks)
+
+(defun webkit-c-mode-hooks ()
+  (let ((path (buffer-file-name)))
+    (cond
+     ((string-match "/webkit/" path) (c-set-style "webkit"))
+     )
+    )
+  )
+(add-hook 'c-mode-common-hook 'webkit-c-mode-hooks)
+
+
+(defun e-detour-c-mode-hooks ()
+  (let ((path (buffer-file-name)))
+    (cond
+     ((string-match "/svn/e/THEMES/detorious" path) (c-set-style "e-detour"))
+     )
+    )
+  )
+(add-hook 'c-mode-common-hook 'e-detour-c-mode-hooks)
+
+
+(defun c-lineup-arglist-kernel-vim (langelem)
+  "Line up argument lists by tabs in kernel-vim style"
+  (let* ((lineup (c-lineup-arglist langelem))
+         (steps (floor (+ c-basic-offset -1
+                          (if (arrayp lineup)
+                              (aref lineup 0)
+                            lineup)) c-basic-offset))
+         tabbed)
+    (save-excursion
+      (goto-char (cdr langelem))
+      (when (looking-at "\(if\|while\|for\)\s ")
+        (setq steps (1+ steps))))
+    (setq tabbed (vector (* (max steps 1) c-basic-offset)))
+    tabbed))
+
+(defconst kernel-vim-c-style
+  '("linux" (c-offsets-alist
+             (arglist-cont-nonempty
+              c-lineup-gcc-asm-reg
+              c-lineup-arglist-kernel-vim)))
+  "C Style for kernel as vim do.")
+
+(c-add-style "kernel-vim" kernel-vim-c-style)
+
+(add-hook 'c-mode-hook 'kernel-vim-c-mode-hook)
+
+(defun kernel-vim-c-mode-hook ()
+  (setq show-trailing-whitespace t)
+  (let ((file (buffer-file-name)))
+    (cond ((or (string-match "/ofono" file)
+               (string-match "/connman" file)
+               (string-match "/kmod" file)
+               (string-match "/bluez" file)
+               (string-match "/ell" file))
+           (c-set-style "kernel-vim")
+           (setq indent-tabs-mode t
+                 sentence-end-double-space t)))))
+
+
+(defun my-autoconf-mode-common-hook ()
+  (let ((path (buffer-file-name)))
+    (cond ((or (string-match "/ofono" file)
+               (string-match "/connman" file)
+               (string-match "/kmod" file)
+               (string-match "/bluez" file)
+               (string-match "/ell" file))
+           (setq tab-width 8
+                 indent-tabs-mode t))
+          )
+    )
+  )
+(add-hook 'autoconf-mode-hook 'my-autoconf-mode-common-hook)
+
+(defun obsidian-c-mode-hooks ()
+  (let ((path (buffer-file-name)))
+    (cond
+    (cond ((or (string-match "/obsidian-playground/" file)
+               (string-match "/obsidian-homescreen/" file))
+               (c-set-style "linux4"))
+          )
+     )
+    )
+  )
+(add-hook 'c-mode-common-hook 'obsidian-c-mode-hooks)
+
+
+;; webkit has no tab in changelog
+;; (defun my-change-log-mode-common-hook ()
+;;   ;; highlight tabs
+;;   (font-lock-add-keywords nil my-extra-keywords)
+;;   ;; other customizations
+;;   (setq tab-width 8
+;;         ;; this will make sure spaces are used instead of tabs
+;;         indent-tabs-mode nil)
+;;   )
+;; (add-hook 'change-log-mode-hook 'my-change-log-mode-common-hook)
+
+(defun* get-closest-pathname (&optional (max-level 3) (file "Makefile"))
+  (let ((root (expand-file-name "/"))
+        (level 0))
+    (expand-file-name file
+                      (loop
+                       for d = default-directory then (expand-file-name ".." d)
+                       do (setq level (+ level 1))
+                       if (file-exists-p (expand-file-name file d))
+                       return d
+                       if (> level max-level)
+                       return nil
+                       if (equal d root)
+                       return nil))))
+
+
+(add-hook 'c-mode-hook
+          (lambda ()
+            (unless (file-exists-p "Makefile")
+              (set (make-local-variable 'compile-command)
+                   (let ((file (file-name-nondirectory buffer-file-name))
+                         (mkfile (get-closest-pathname)))
+                     (if mkfile
+                         (progn (format "make -C %s -f %s"
+                                        (file-name-directory mkfile) mkfile))
+                       (format "%s -c -o %s.o %s %s %s"
+                               (or (getenv "CC") "gcc")
+                               (file-name-sans-extension file)
+                               (or (getenv "CPPFLAGS") "-DDEBUG=9")
+                               (or (getenv "CFLAGS") "-Wall -Wextra -Wshadow -ggdb3 -fvisibility=hidden")
+                               (or (getenv "CXXFLAGS") "-Wall -Wextra -Wshadow -ggdb3 -fvisibility=hidden")
+                               file)))))))
+
+(put 'downcase-region 'disabled nil)
+
+(setq load-path (cons "/home/gustavo/.emacs.d/site-packages" load-path))
+
+(add-to-list 'load-path "/home/gustavo/.emacs.d/site-packages/pyrex-mode.el")
+(add-to-list 'auto-mode-alist '("\\.pyx$\\|\\.pxi$\\|\\.pxd$" . pyrex-mode))
+(autoload 'pyrex-mode "pyrex-mode")
+
+(add-to-list 'load-path "/home/gustavo/.emacs.d/site-packages/edje-mode.el")
+(add-to-list 'auto-mode-alist '("\\.edc$" . edje-mode))
+(autoload 'edje-mode "edje-mode")
+
+(put 'upcase-region 'disabled nil)
+
+;;(require 'xcscope)
+;;(require 'taskjuggler-mode)
+
+(add-to-list 'auto-mode-alist '("\\.org\\'" . org-mode))
+
+(require 'session)
+(add-hook 'after-init-hook 'session-initialize)
+
+;; (require 'pastebin)
+
+(server-start)

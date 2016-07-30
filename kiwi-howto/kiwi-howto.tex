@@ -1,0 +1,389 @@
+% -*- coding: latin-1 -*-
+\documentclass[a4paper]{howto}
+\usepackage{listings}
+\usepackage{hyperref}
+\usepackage[brazil]{babel}
+\usepackage[latin1]{inputenc}
+\usepackage{verbatim}
+\usepackage{graphicx}
+\usepackage{color}
+\usepackage{hyperref}
+
+\title{Tutorial Introdutório ao Kiwi}
+
+\author{Gustavo Sverzut Barbieri}
+\authoraddress{barbieri@gmail.com}
+\date{Julho, 2006}
+
+\begin{document}
+  \lstset{
+    frame=single,
+    showstringspaces=false,
+    extendedchars=true,
+    language=Python,
+    backgroundcolor=\color[rgb]{0.95,0.95,0.95},
+    rulecolor=\color[rgb]{0.3,0.3,0.3},
+    basicstyle=\color[rgb]{0,0,0}\small\upshape\ttfamily,
+    commentstyle=\color[rgb]{0.5,0.0,0.0}\rmfamily\itshape,
+    keywordstyle=\color[rgb]{0.7,0.0,0.8}\bfseries,
+    stringstyle=\color[rgb]{0.6,0.4,0.4},
+    identifierstyle=\color[rgb]{0.2,0.2,0.8}
+ }
+
+\maketitle
+
+\begin{abstract}
+
+A plataforma Kiwi é desenvolvida, principalmente, pela empresa Async
+(http://www.async.com.br), baseada em Python e GTK, ela visa facilitar
+o desenvolvimento de aplicativos que se relacionam com Banco de Dados.
+
+\begin{center}
+  \url{http://www.async.com.br/projects/kiwi/}
+\end{center}
+
+
+Este tutorial pode ser obtido em:
+
+\begin{center}
+  \url{http://www.gustavobarbieri.com.br/kiwi-howto/}
+
+  \url{http://code.gustavobarbieri.com.br/playground/kiwi-howto/} (SVN)
+\end{center}
+\end{abstract}
+
+
+\section{Requisitos}
+
+\begin{itemize}
+  \item \textbf{GTK+ 2.6.x:} \url{ftp://ftp.gtk.org/pub/gtk/v2.6/}
+  \item \textbf{PyGTK 2.6.x:} \url{ftp://ftp.gtk.org/pub/gtk/python/v2.6/}
+  \item \textbf{Python $>$ 2.3:} \url{http://www.python.org/download/}
+  \item \textbf{Gazpacho 0.6.x:}
+    \url{http://ftp.gnome.org/pub/GNOME/sources/gazpacho/0.6/} mas se
+    possível utilize a versão do SVN:
+\begin{verbatim}
+svn co http://svn.sicem.biz/gazpacho/trunk gazpacho
+\end{verbatim}
+\end{itemize}
+
+\section{Sobre este Texto}
+
+Este texto é baseado no texto do Kiko (Christian Reis) disponível em
+http://www.async.com.br/projects/kiwi/howto/ o qual descreve a versão
+1 da plataforma. Desde lá algumas coisas mudaram, porém os conceitos
+ainda são válidos. Este texto visa ser uma abordagem mais superficial,
+porém rápida e direta, com os exemplos funcionando na versão mais nova
+do software.
+
+Durante a leitura e entendimento deste texto, você deverá consultar a
+referência da interface de programação do Kiwi, em:
+
+\begin{center}
+  \url{http://async.com.br/projects/kiwi/api/}
+\end{center}
+
+
+\section{Obtendo o Kiwi}
+
+Utilize o software SVN:
+
+\begin{verbatim}
+svn co svn://svn.async.com.br/kiwi/trunk kiwi
+\end{verbatim}
+
+
+\section{Instalação}
+
+Após instalar as dependências e baixar o código do Kiwi, instale-o no
+seu sistema, entre no diretório do kiwi e como super-usuário (root)
+faça:
+
+\begin{verbatim}
+python setup.py install
+\end{verbatim}
+
+
+
+\section{Primeiros Passos com Kiwi e MVC}
+
+O Kiwi utiliza o modelo de desenvolvimento
+Modelo-Visão-Controlador (\emph{Model-View-Controller}, MVC).
+
+Nosso primeiro exemplo vai utilizar o modelo de pessoa definido por
+Pessoa, com os atributos: nome, endereço e telefone. Este modelo pode
+ser qualquer classe Python.
+
+Nossa ``Visão'' vai utilizar um arquivo XML gerado no Gazpacho. É um
+arquivo glade convencional, a única diferença é que os campos do
+modelo que se quer ligar automaticamente à visão devem ser baseados nos
+tipos em kiwi.ui.widgets, como kiwi.ui.widgets.entry.Entry. No arquivo
+XML ele vai aparecer como  class=``kiwi+ui+widgets+entry+Entry''. O nome
+do objeto e a propriedade \lstinline|model_attribute| devem ter os nomes
+indicados no modelo. Outra peculiaridade é que o nome do arquivo
+``.glade'' deve ser igual ao do componente (widget) principal, caso
+contrário é necessário especificar o parâmetro ``gladename'' para o
+construtor das classes de visão.
+
+O controlador neste caso é feito automaticamente pelo Kiwi.
+
+Os códigos estão presentes no diretório \texttt{example-01}, divididos em 4
+diretórios:
+
+\begin{itemize}
+  \item \textbf{simple:} o mínimo necessário. O modelo é um objeto python
+    convencional.
+  \item \textbf{pickle:} uma versão que persiste os dados utilizando o
+    formato de serialização pickle.
+  \item \textbf{sqlobject:} uma versão que persiste os dados
+    utilizando sqlobject.
+  \item \textbf{kiwi-model:} uma versão que utiliza
+    kiwi.models.Model. Esta versão mostra que ao utilizá-la, a
+    interface é notificada de modificações no modelo.
+\end{itemize}
+
+Ambos exemplos são bem simples, os 3 primeiros diferindo apenas no
+tipo de modelo utilizado. Já kiwi-model utiliza-se de duas visões
+para o mesmo modelo, sendo assim possível notar que se este for
+derivado de kiwi.models.Model, a interface é notificada de mudanças no
+modelo, a seqüência de acontecimentos é:
+
+\begin{quote}
+   Usuário modifica Visão 1 $\Rightarrow$\\
+   Gera evento para o Controlador 1 $\Rightarrow$\\
+   Modifica o Model $\Rightarrow$\\
+   Notifica os proxies 1 e 2 $\Rightarrow$\\
+   Visão 1 já está correta, fica igual. Visão 2 será atualizada.
+\end{quote}
+
+Os exemplos são compostos da seguinte forma:
+\begin{enumerate}
+  \item Importamos as classes e funções dos módulos que utilizaremos.
+  \item Definimos nosso modelo.
+  \item Instanciamos o modelo.
+  \item Criamos a visão, passando como parâmetro a função a ser executada
+    quando a janela for fechada (\lstinline|delete_handler|), os nomes dos
+    componentes gráficos do XML/Glade os quais queremos ter acesso como
+    atributos do nosso objeto de visão (widgets) e o nome do arquivo
+    XML (gladefile). Note que o componente principal deve ter o mesmo
+    nome do arquivo, senão será necessário especificar o parâmetro
+    adicional ``gladename''.
+  \item Adicionamos um ``proxy'' para manter a sincronia entre modelo e
+    visão.
+  \item Configuramos a interface para focalizar o componente do topo e
+    ainda mostrar todos os componentes existentes.
+  \item Por fim nós entregamos a execução do programa para o GTK, que
+    entrará no seu laço para tratamento de eventos, entendendo assim
+    entrada de teclado, mouse e outros.
+\end{enumerate}
+
+
+\section{Componentes Básicos do Kiwi}
+
+O Kiwi é composto por um conjunto de classes que podem ser agrupadas
+em:
+
+\begin{itemize}
+  \item \textbf{Visão (\emph{Views}):} representação gráfica, com
+    componentes de interface de usuário: botões, entrada de texto,
+    rótulos, figuras e outros.
+  \item \textbf{Controladores (\emph{Controllers}):} trata os sinais e
+    eventos gerados pelo usuário que interage com os componentes de
+    Visão: entradas de teclado e mouse, eventos temporais e outros.
+  \item \textbf{Delegadores (\emph{Delegates}):} classes que combinam
+    Visão e Controladores para facilitar e agilizar o desenvolvimento.
+  \item \textbf{Modelos (\emph{Models}):} são objetos que representam/modelam
+    seus dados.
+  \item \textbf{Proxies:} facilitador que mantém sincronizados os
+    dados do modelo e visão, toda mudança na visão será aplicada ao
+    modelo. Caso o modelo seja derivado de kiwi.models.Model, o
+    contrário também é verdade: mudanças no modelo serão aplicadas na
+    visão. São utilizados para a maioria dos formulários.
+\end{itemize}
+
+\subsection{Visão (Views)}
+
+O Kiwi provê duas classes para Visão, localizadas em kiwi.ui.view:
+
+\begin{itemize}
+  \item \lstinline|SlaveView|: é considerado um objeto do GTK e pode
+    ser embutido em outros componentes que aceitem um
+    \lstinline|GObject|. Várias \lstinline|SlaveView| podem ser
+    combinadas para formar uma interface completa a partir de
+    componentes reusáveis.  Pode ser baseada em um arquivo XML do
+    gazpacho/glade.
+  \item \lstinline|BaseView|: derivado de \lstinline|SlaveView|,
+    implementa algumas funcionalidades extras necessárias para uma
+    janela principal (\emph{toplevel}). O parâmetro do construtor
+    \lstinline|delete_handler| é um objeto ``chamável''
+    (\textit{callable}) que será chamado quando a janela for removida
+    (por exemplo o usuário clicou no botão de fechar a janela).
+\end{itemize}
+
+
+
+\subsubsection{Composição de Interfaces de Usuário}
+
+A fim de reusar os componentes da interface de usuário, podemos
+combinar \lstinline|SlaveView|s, compondo, assim, uma interface de usuário mais
+rica.
+
+Os passos para fazer a composição são extremamente simples:
+
+\begin{enumerate}
+\item \textbf{Gazpacho:} Desenhe os seus componentes em arquivos
+  Glade/XML separados.
+\item \textbf{Python:} Crie uma instância de \lstinline|SlaveView|
+  para cada componente criado.
+\item \textbf{Gazpacho:} Na tela principal, na qual os objetos serão
+  embutidos, crie componentes do tipo \lstinline|EventBox| com nomes
+  apropriados. Este elemento será removido pelo Kiwi e seu componente
+  será incluído no lugar.
+\item \textbf{Python:} Crie uma instância de \lstinline|BaseView|
+  para a tela principal.
+\item \textbf{Python:} Utilize o método \lstinline|attach_slave()| de
+  \lstinline|BaseView| com os parâmetro sendo o nome do
+  \lstinline|EventBox| adicionado e a instância de
+  \lstinline|SlaveView| equivalente.
+\end{enumerate}
+
+Vide os arquivos em \texttt{example-02/}. Os componentes separados são
+\lstinline|entry_editor| e \lstinline|list_entries| que podem ser
+visualizados nos arquivos
+XML/Glade correspondentes. A tela principal, também chamada de casca
+(ou em inglês, \emph{``shell''}) está em \texttt{addressbook.glade}. O
+arquivo \texttt{addressbook.py} lê os três componentes e então anexa
+os componentes \lstinline|entry_editor| e \lstinline|list_entries| ao
+componente principal \lstinline|addressbook|. Note, porém, que por
+enquanto não temos nenhum modelo associado.
+
+
+
+\subsection{Controladores (Controllers)}
+
+Para que a interface de usuário responda aos eventos, seja o
+pressionar de um botão, teclas de atalho, preenchimento de um campo,
+etc precisamos ligá-la a um controlador.
+
+O kiwi provê uma classe chamada \lstinline|BaseController| para
+implementarmos os nossos controladores. Esta classe tem um recurso que torna
+extraordinariamente fácil criarmos as ações, apenas temos que criar
+métodos que tenham a nomenclatura:
+
+\begin{verbatim}
+   <quando>_<nome_do_componente>__<sinal_do_componente>
+\end{verbatim}
+
+\texttt{$<$quando$>$} pode assumir 2 valores: ``\textbf{on}'' e
+``\textbf{after}''. O primeiro é usado para ações no instante que elas
+aconteceram, geralmente utilizadas para ``\emph{clicks}'' de botão,
+ativação de ações, etc. Já o segundo é usado para ações após o ``on''
+ter sido executado, geralmente utilizadas para ações como mudança de
+um campo de texto.
+
+Por exemplo, se queremos que ao (quando=``on'') pressionar
+(sinal\_do\_componente=``clicked'') o botão cancelar
+(nome\_do\_componente=``cancelar'') seja chamado nosso método, então
+usamos:
+
+\begin{lstlisting}
+   def on_cancelar__clicked( self, button, *args ):
+       codigo
+\end{lstlisting}
+
+
+Caso o desejado seja uma ação após (quando=``after'') o conteúdo de uma
+caixa de texto chamada nome (nome\_do\_componente=``nome'') tenha mudado
+(sinal\_do\_componente=``content\_changed''), poderíamos usar:
+
+\begin{lstlisting}
+   def after_nome__content_changed( self, entry, *args ):
+       codigo
+\end{lstlisting}
+
+
+Para associar teclas de atalho, apenas crie um mapeamento
+(\lstinline|dict|) que contenha as teclas  (ex:
+\lstinline|gtk.keysyms.a|) como chave e as funções de tratamento como
+valor.
+
+Vide os arquivos em \texttt{example-03/}. Este exemplo define um controlador
+\lstinline|ExampleController| com 3 ações, sendo uma para cada botão e
+outra para a caixa de texto. Os botões, quando clicados, irão
+modificar o texto do rótulo ``label\_last\_button''. A caixa de texto,
+ao ser modificada, irá ter seu conteúdo copiado para o rótulo
+``label\_name''. Note que todos os componentes utilizados devem ter
+sido declarados com o parâmetro ``widgets'' de \lstinline|BaseView|.
+
+
+\subsection{Delegadores (Delegates)}
+
+Dos exemplos anteriores com Visão e Controlador você já deve imaginar
+que deveria existir algo para automatizar a tarefa. E existe: os
+delegadores (\lstinline|Delegate|s).
+
+Delegadores são nada mais que a junção de Visão e Controlador, feita
+usando herança múltipla, com o objetivo de facilitar a programação.
+
+Existem também o \lstinline|SlaveDelegate|, que é a junção de
+\lstinline|SlaveView| com \lstinline|Controller|, e se comunica com o
+\emph{slave}.
+
+Vide os arquivos em \texttt{example-04/}, sendo o sub-diretório
+\texttt{simple/} um amostra de um delegador simples e o sub-diretório
+\texttt{composite/} um exemplo mais avançado, com
+\lstinline|SlaveDelegate| para compor uma tela utilizando componentes menores.
+
+O exemplo simples (\texttt{example-04/simple}) é o \texttt{example-03}
+utilizando \lstinline|Delegate|s. Já o exemplo composto
+(\texttt{example-04/composite}) é o
+\texttt{example-02} utilizando \lstinline|Delegate|s e \lstinline|SlaveDelegate|s. Note que \lstinline|SlaveView|s,
+e portanto \lstinline|BaseView|, têm disponível o sinal ``result'' que deve ser
+utilizado para passar dados entre várias visões e, portanto,
+delegadores. Isto está exemplificado em \texttt{example-04/composite} no qual
+\lstinline|ListEntries| emite o sinal quando a seleção da tabela mudou e
+\lstinline|Addressbook| trata este sinal com
+\lstinline|entry_selected()|, perceba
+que a conexão do sinal tem que ser feito utilizando o método
+convencional do GTK ao invés da facilidade do controlador.
+
+
+
+\subsection{Modelos (Models), Tipos de Dados e Validadores}
+
+A plataforma Kiwi já faz a conferência de tipos de dados baseada no
+valor do campo ``data\_type'' do arquivo XML/Glade. Além disso, ela
+confere os campos obrigatórios baseada no valor do campo ``mandatory''
+deste mesmo arquivo.
+
+Após ter sido ligado o modelo à visão e controle (ou delegador), o
+Kiwi mostra um ícone ao lado dos campos obrigatórios e ainda não
+preenchidos, indicando que o mesmo deve conter um valor. Os campos que
+não conferem com o tipo de dado, por exemplo um texto no lugar de um
+inteiro, ficarão marcados em vermelho e um ícone aparecerá ao lado que
+ainda fornecerá uma dica ``tool tip'' dizendo qual o tipo de dado
+esperado.
+
+Podemos também registrar uma função que será chamada quando o estado
+do formulário mudar de válido para inválido, podendo, por exemplo,
+desabilitar o botão de ``Ok''. Esta função é
+\lstinline|register_validate_function()|.
+
+Vide \texttt{exemple-05/simple}.
+
+Porém podemos adicionar nosso próprio validador aos campos, utilizando
+métodos do controlador com o sinal ``\emph{validate}'' e a qual deve
+retornar \lstinline|ValidationError| quando a validação falhar, por
+exemplo:
+
+\begin{lstlisting}
+   def on_caixa_de_texto__validate( self, entry, data ):
+       if not check_data( data ):
+          return ValidationError( "Message to be displayed in tool tip" )
+\end{lstlisting}
+
+
+
+Vide \texttt{exemplo-05/advanced}.
+
+\end{document}

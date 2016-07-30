@@ -1,0 +1,1028 @@
+#!/usr/bin/env python
+# -*- coding: utf-8 -*-
+
+from decimal import Decimal, ROUND_DOWN
+import optparse
+
+text_encoding = "utf-8"
+
+from taskjuggler_utils.parser import *
+
+
+def decimal2tuple(dec):
+    signal, numbers, exp = dec.as_tuple()
+    if exp < 0:
+        integer = numbers[:exp]
+        frac = numbers[exp:]
+    else:
+        integer = numbers + (0,) * exp
+        frac = tuple()
+    for f in frac:
+        if f > 0:
+            break
+    else:
+        frac = tuple()
+    return integer, frac
+
+
+def number2words(n, and_str, group, ones, tens, twenties, hundreds):
+    length = len(n)
+    s = ""
+    idx = length
+    t = 0
+    x2 = ""
+    while 1:
+        v = n[length - idx]
+        if idx % 3 == 0:
+            if hundreds[v] is None:
+                plural = int(v > 1)
+                x = "%s%s" % (ones[v], group[plural][0])
+            else:
+                x = hundreds[v]
+            t += v * 100
+        elif (idx + 1) % 3 == 0 and v > 0:
+            idx -= 1
+            v2 = n[length - idx]
+            if v == 1:
+                x = tens[v2]
+            else:
+                if ones[v2]:
+                    x = "%s%s%s" % (twenties[v], and_str, ones[v2])
+                else:
+                    x = twenties[v]
+            t += v * 10 + v2
+        else:
+            x = ones[v]
+            t += v
+
+        if and_str and x and x2:
+            s += and_str
+        if x:
+            s += x
+            x2 = x
+
+        idx -= 1
+        if idx <= 0:
+            break
+        if idx % 3 == 0:
+            plural = int(t > 1)
+            t = 0
+            s += group[plural][int(idx / 3)]
+
+    return s
+
+
+def decimal2money(dec, integer_currency, cents_currency, and_str, number2words):
+    integer, cents = decimal2tuple(dec)
+    s = ""
+    if integer:
+        s += "%s%s" % (number2words(integer), integer_currency)
+    if integer and cents:
+        s += and_str
+    if cents:
+        if len(cents) > 2:
+            print "warning: cents is not rounded to the second decimal:", dec
+            cents = cents[:2]
+        s += "%s%s" % (number2words(cents), cents_currency)
+    return s
+
+
+def number2words_english(n):
+    group = (("hundred ", "thousand ", "million ", "billion "),
+             ("hundred ", "thousand ", "million ", "billion "))
+    ones = ("", "one ","two ","three ","four ",
+            "five ", "six ","seven ","eight ","nine ")
+    tens = ("ten ","eleven ","twelve ","thirteen ", "fourteen ",
+            "fifteen ","sixteen ","seventeen ","eighteen ","nineteen ")
+    twenties = ("","","twenty ","thirty ","forty ",
+                "fifty ","sixty ","seventy ","eighty ","ninety ")
+    hundreds = (None,) * 10
+    return number2words(n, "", group, ones, tens, twenties, hundreds)
+
+
+def number2words_portuguese(n):
+    group = (("cento ", "mil ", "milhão ", "bilhão "),
+             ("centos ", "mil ", "milhões ", "bilhões "))
+    ones = ("", "um ","dois ","três ","quatro ",
+            "cinco ", "seis ","sete ","oito ","nove ")
+    tens = ("dez ","onze ","doze ","treze ", "quatorze ",
+            "quinze ","dezesseis ","dezessete ","dezoito ","dezenove ")
+    twenties = ("","","vinte ","trinta ","quarenta ",
+                "cinquenta ","sessenta ","setenta ","oitenta ","noventa ")
+    hundreds = ("", "cento ", "duzentos ", "trezentos ", "quatrocentos ",
+                "quinhentos ", "seiscentos ", "setecentos ", "oitocentos ",
+                "novecentos ")
+    return number2words(n, "e ", group, ones, tens, twenties, hundreds)
+
+
+def decimal2money_english(dec, integer_currency, cents_currency):
+    return decimal2money(dec, integer_currency, cents_currency, " and ",
+                         number2words_english)
+
+
+def decimal2money_portuguese(dec, integer_currency, cents_currency):
+    return decimal2money(dec, integer_currency, cents_currency, " e ",
+                         number2words_portuguese)
+
+latex_to_escape = {
+    '\\': '$\\backslash$',
+    '{': '\\symbol{%d}' % ord('{'),
+    '}': '\\symbol{%d}' % ord('}'),
+    '#': '\\symbol{%d}' % ord('#'),
+    '$': '\\symbol{%d}' % ord('$'),
+    '%': '\\symbol{%d}' % ord('%'),
+    '&': '\\symbol{%d}' % ord('&'),
+    '~': '\\symbol{%d}' % ord('~'),
+    '_': '\\symbol{%d}' % ord('_'),
+    '^': '\\symbol{%d}' % ord('^')
+    }
+def latex_escape(text):
+    if not text:
+        return text
+
+    if isinstance(text, unicode):
+        text = text.encode(text_encoding)
+
+    escaped = []
+    escaped_append = escaped.append
+    to_escape_get = latex_to_escape.get
+    for c in text:
+        escaped_append(to_escape_get(c, c))
+
+    return ''.join(escaped)
+
+
+def table_row(output, row, fmt="%s", escape=True):
+    if not escape:
+        esc = lambda x: x
+    else:
+        esc = latex_escape
+    output.write("    ")
+    output.write(" & ".join(fmt % esc(cell) for cell in row))
+    output.write(" \\\\\n")
+
+def table_hline(output):
+    output.write("    \\hline\\noalign{\\smallskip}\n")
+
+def table_gen(output, body, header=None, footer=None,
+              caption="", label="", align=None, escape=True):
+    if not align:
+        if header:
+            align = "l" * len(header[0])
+        else:
+            align = "l" * len(body[0])
+
+    output.write("""\
+\\begin{table}[htb]
+{\\small
+\\begin{center}
+  \\begin{tabular}{%s}
+    \\hline\\noalign{\\smallskip}
+""" % align)
+    if header:
+        table_row(output, header, fmt=r"{\bf %s}", escape=escape)
+        table_hline(output)
+
+    if body:
+        for row in body:
+            table_row(output, row, escape=escape)
+
+    if footer:
+        table_hline(output)
+        table_row(output, footer, fmt=r"{\bf %s}", escape=escape)
+
+    output.write("""\
+    \\hline\\noalign{\\smallskip}
+  \\end{tabular}
+""")
+    if caption:
+        output.write("\\caption{%s}\n" % (caption,))
+    if label:
+        output.write("\\label{tab:%s}\n" % (label,))
+    output.write("""\
+\\end{center}}
+\\end{table}
+""")
+
+
+def apply_currency_format(cf, v):
+        if not isinstance(v, Decimal):
+            v = Decimal(str(v))
+
+        sign, digits, exp = v.as_tuple()
+        s = ""
+
+        if sign:
+            s += cf.sign_prefix
+
+        integer, frac = decimal2tuple(v)
+        length = len(integer)
+        group_sep = cf.group_sep
+        for i, d in enumerate(integer):
+            p = length - i
+            if p % 3 == 0 and p < length:
+                s += group_sep
+            s += str(d)
+
+        if len(frac) < cf.frac_digits:
+            frac += (0,) * (cf.frac_digits - len(frac))
+        elif len(frac) > cf.frac_digits:
+            frac = frac[:cf.frac_digits]
+
+        if frac:
+            s += cf.frac_sep
+            s += "".join(str(x) for x in frac)
+
+        if sign:
+            s += cf.sign_suffix
+
+        return s
+
+
+class AbstractResourceReport(object):
+    def __init__(self, doc, scenario="plan",
+                 selected_resources=None, just_toplevel=False,
+                 just_no_leafs=False):
+        self.doc = doc
+        self.scenario = scenario
+        self.selected_resources = selected_resources
+        self.just_toplevel = just_toplevel
+        self.just_no_leafs = just_no_leafs
+        self._calc_toplevels()
+        self._calc_resouces()
+
+    def _resource_bookings(self, resource):
+        bookings = 0
+        for task_bookings in resource.booking[self.scenario].itervalues():
+            for tb in task_bookings:
+                bookings += tb.diff
+        total = bookings
+        bookings = [bookings]
+        for child in resource.resources:
+            b, desc = self._resource_bookings(child)
+            total += b
+            bookings.append((child, desc))
+        return total, bookings
+
+    def _calc_toplevels(self):
+        self.toplevel = []
+        for r in self.doc.resources.itervalues():
+            if r.parent is None:
+                self.toplevel.append(r)
+        self.toplevel.sort(cmp=lambda a, b: cmp(a.name, b.name))
+
+    def _append_resource_and_children(self, resource, level, filter=None):
+        if level > 0:
+            spacing = "\\hspace{%0.2fcm}" % (0.2 * level,)
+        else:
+            spacing = ""
+        name = "%s%s" % (spacing, latex_escape(resource.name))
+        self.resources.append((name, resource))
+        children = list(resource.resources)
+        children.sort(cmp=lambda a, b: cmp(a.name, b.name))
+        for c in children:
+            if filter is None or not filter(c):
+                self._append_resource_and_children(c, level + 1, filter)
+
+    def _calc_resouces(self):
+        self.resources = []
+        if self.selected_resources:
+            for r in self.selected_resources:
+                try:
+                    r = self.doc.resources[r]
+                    self.resources.append((latex_escape(r.name), r))
+                except KeyError:
+                    raise ValueError("no resource id %r." % r)
+        elif self.just_toplevel:
+            self.resources = [(latex_escape(r.name), r) for r in self.toplevel]
+        elif self.just_no_leafs:
+            filter = lambda x: not x.resources
+            for r in self.toplevel:
+                self._append_resource_and_children(r, 0, filter)
+        else:
+            for r in self.toplevel:
+                self._append_resource_and_children(r, 0)
+
+    def _is_children_displayed(self, children):
+        for c in children:
+            for n, r in self.resources:
+                if c is r:
+                    return True
+            else:
+                if self._is_children_displayed(c.resources):
+                    return True
+        return False
+
+    def _value2str(self, v):
+        raise NotImplementedError("_value2str not implemented")
+
+    def _value(self, resource, booking, booking_desc):
+        raise NotImplementedError("_value not implemented")
+
+    def _output(self, output, language, total, body):
+        raise NotImplementedError("_output not implemented")
+
+    def report(self, output, language):
+        total = Decimal("0")
+        body = []
+        for name, r in self.resources:
+            b, desc = self._resource_bookings(r)
+            if b <= 0:
+                continue
+            v = self._value(r, b, desc)
+            body.append((name, self._value2str(v)))
+            if not self._is_children_displayed(r.resources):
+                total += v
+
+        self._output(output, language, total, body)
+
+
+class ResourceLoadReport(AbstractResourceReport):
+    def _value2str(self, v):
+        return str(v)
+
+    def _value(self, resource, booking, booking_desc):
+        return int(booking / 3600)
+
+    def _output(self, output, language, total, body):
+        if language == "english":
+            header = ("Professional", "Load (hours)")
+            footer = ("Total", self._value2str(total))
+            caption = "Project resource load."
+        elif language == "portuguese":
+            header = ("Profissional", "Carga (horas)")
+            footer = ("Total", self._value2str(total))
+            caption = "Distribuição de carga do projeto."
+        else:
+            raise ValueError("language %s not supported" % language)
+        table_gen(output, body, header, footer, caption, "resourceload",
+                  "lr", escape=False)
+
+
+class ResourcePriceReport(AbstractResourceReport):
+    def __init__(self, doc, scenario="plan",
+                 selected_resources=None, just_toplevel=False,
+                 just_no_leafs=False):
+        AbstractResourceReport.__init__(self, doc, scenario, selected_resources,
+                                        just_toplevel, just_no_leafs)
+        for p in doc.prjs.itervalues():
+            if p.currency:
+                self.currency = p.currency
+                self.prj = p
+                break
+        else:
+            raise ValueError("could not discover project and currency.")
+
+    def _value2str(self, v):
+        s = apply_currency_format(self.prj.currency_format, v)
+        return latex_escape(s)
+
+    def _value(self, resource, booking, booking_desc):
+        wage = None
+        r = resource
+        while wage is None and r is not None:
+            try:
+                wage = r.wage
+            except AttributeError:
+                r = r.parent
+
+        if wage is not None:
+            return wage * int(booking / 3600)
+        else:
+            def calc(wage, booking, desc):
+                booking = int(booking / 3600)
+                total = wage * booking
+                for r, b in desc[1:]:
+                    try:
+                        if r.wage:
+                            wage = r.wage
+                    except AttributeError:
+                        pass
+                    total += calc(wage, b[0], b)
+
+                return total
+
+            return calc(Decimal("0"), booking, booking_desc)
+
+    def _output(self, output, language, total, body):
+        currency = latex_escape(self.currency)
+        if language == "english":
+            header = ("Professional", "Value (%s)" % currency)
+            footer = ("Total", self._value2str(total))
+            caption = "Project resources prices."
+        elif language == "portuguese":
+            header = ("Profissional", "Valor (%s)" % currency)
+            footer = ("Total", self._value2str(total))
+            caption = "Distribuição de preços do projeto."
+        else:
+            raise ValueError("language %s not supported" % language)
+        table_gen(output, body, header, footer, caption, "resourceprice",
+                  "lr", escape=False)
+
+
+class ProjectPriceReport(ResourcePriceReport):
+    def _output(self, output, language, total, body):
+        if language == "english":
+            if self.currency == "USD":
+                int_cur = "US dollars"
+                cent_cur = "cents"
+            elif self.currency == "BRL":
+                int_cur = "Brazil reais"
+                cent_cur = "cents"
+            elif self.currency == "EUR":
+                int_cur = "Euros"
+                cent_cur = "cents"
+            else:
+                raise ValueError("currency %s not supported" % self.currency)
+
+            money = decimal2money_english(total, int_cur, cent_cur)
+        elif language == "portuguese":
+            if self.currency == "USD":
+                int_cur = "dólares"
+                cent_cur = "centavos"
+            elif self.currency == "BRL":
+                int_cur = "reais"
+                cent_cur = "centavos"
+            elif self.currency == "EUR":
+                int_cur = "Euros"
+                cent_cur = "centavos"
+            else:
+                raise ValueError("currency %s not supported" % self.currency)
+            money = decimal2money_portuguese(total, int_cur, cent_cur)
+        else:
+            raise ValueError("language %s not supported" % language)
+
+        output.write("""\
+\\def\\ThePrice{%s}
+\\def\\ThePriceName{%s}
+""" % (self._value2str(total), money))
+
+
+class PaymentsReport(ResourcePriceReport):
+    def __init__(self, doc, header, reference, split, scenario="plan",
+                 selected_resources=None, just_toplevel=False,
+                 just_no_leafs=False):
+        ResourcePriceReport.__init__(self, doc, scenario, selected_resources,
+                                     just_toplevel, just_no_leafs)
+        self.header = header
+        self.reference = reference
+        self.split = split
+
+    def _output(self, output, language, total, body):
+        s100 = str(Decimal("100.00"))
+        body = []
+        for offset, percent in self.split:
+            s = "%s %s" % (self.reference, offset)
+            v = total * percent / Decimal("100.0")
+            body.append((s, str(percent), self._value2str(v)))
+
+        currency = latex_escape(self.currency)
+        if language == "english":
+            header = (self.header, "\%", "Value (%s)" % currency)
+            footer = ("Total", s100, self._value2str(total))
+            caption = "Payments"
+        elif language == "portuguese":
+            header = (self.header, "\%", "Valor (%s)" % currency)
+            footer = ("Total", s100, self._value2str(total))
+            caption = "Pagamentos"
+        else:
+            raise ValueError("language %s not supported" % language)
+
+        if len(self.split) < 2:
+            footer = None
+        table_gen(output, body, header, footer, caption, "payments",
+                  "lrr", escape=False)
+
+
+class AbstractTaskReport(object):
+    def __init__(self, doc, scenario="plan",
+                 selected_tasks=None, just_toplevel_tasks=False,
+                 just_no_leafs_tasks=False, show_milestones=False,
+                 selected_resources=None, just_toplevel_resources=False,
+                 just_no_leafs_resources=False, no_resources=False):
+        self.doc = doc
+        self.scenario = scenario
+        self.selected_tasks = selected_tasks
+        self.just_toplevel_tasks = just_toplevel_tasks
+        self.just_no_leafs_tasks = just_no_leafs_tasks
+        self.show_milestones = show_milestones
+        self.selected_resources = selected_resources
+        self.just_toplevel_resources = just_toplevel_resources
+        self.just_no_leafs_resources = just_no_leafs_resources
+        self.no_resources = no_resources
+        self._calc_toplevels()
+        self._calc_tasks()
+
+    def _task_resource_bookings(self, task, resource):
+        bookings = 0
+        for child in resource.resources:
+            bookings += self._task_resource_bookings(task, child)
+
+        if task.id in resource.booking[self.scenario]:
+            for tb in resource.booking[self.scenario][task.id]:
+                bookings += tb.diff
+        return bookings
+
+    def _task_filter_milestones(self, children):
+        tl = []
+        for t in children:
+            if t.is_milestone:
+                continue
+            if not t.tasks or self._task_filter_milestones(t.tasks):
+                tl.append(t)
+        return tl
+
+    def _append_task_and_children(self, task, level, filter=None):
+        if level > 0:
+            spacing = "\\hspace{%0.2fcm}" % (0.2 * level,)
+        else:
+            spacing = ""
+        name = "%s%s" % (spacing, latex_escape(task.name))
+        self.tasks.append((name, task))
+        for c in task.tasks:
+            if filter is None or not filter(c):
+                self._append_task_and_children(c, level + 1, filter)
+
+    def _calc_toplevels(self):
+        self.toplevel = []
+        for p in self.doc.prjs.itervalues():
+            if len(p.tasks) == 1 and p.tasks[0].tasks:
+                if not self.show_milestones:
+                    subtasks = self._task_filter_milestones(p.tasks[0].tasks)
+                    self.toplevel.extend(subtasks)
+                else:
+                    self.toplevel.extend(p.tasks[0].tasks)
+            else:
+                if not self.show_milestones:
+                    self.toplevel.extend(task_filter_milestones(p.tasks))
+                else:
+                    self.toplevel.extend(p.tasks)
+
+    def _calc_tasks(self):
+        self.tasks = []
+        if self.selected_tasks:
+            for t in self.selected_tasks:
+                try:
+                    t = self.doc._known_tasks[t]
+                    self.tasks.append((latex_escape(t.name), t))
+                except KeyError:
+                    raise ValueError("no task id %r." % t)
+        elif self.just_toplevel_tasks:
+            self.tasks = [(latex_escape(t.name), t) for t in self.toplevel]
+        elif self.just_no_leafs_tasks:
+            filter = lambda x: not x.tasks
+            for t in self.toplevel:
+                self._append_task_and_children(t, 0, filter)
+        else:
+            for t in self.toplevel:
+                self._append_task_and_children(t, 0)
+
+    def _resource_display(self, r):
+        if self.selected_resources:
+            while r:
+                if r.id in self.selected_resources:
+                    return r.name
+                r = r.parent
+            return None
+        elif self.just_toplevel_resources:
+            while r.parent:
+                r = r.parent
+            return r.name
+        elif self.just_no_leafs_resources:
+            if not r.resources and r.parent:
+                r = r.parent
+            return r.name
+        else:
+            return r.name
+
+    def _value2str(self, v):
+        raise NotImplementedError("_value2str not implemented")
+
+    def _value(self, resource, booking, booking_desc):
+        raise NotImplementedError("_value not implemented")
+
+    def _output(self, output, language, total, body):
+        raise NotImplementedError("_output not implemented")
+
+    def _task_visible(self, task):
+        for name, t in self.tasks:
+            if task is t:
+                return True
+        return False
+
+    def _task_children_visible(self, task):
+        for child in task.tasks:
+            if self._task_or_children_visible(child):
+                return True
+        return False
+
+    def _task_or_children_visible(self, task):
+        return self._task_visible(task) or self._task_children_visible(task)
+
+    def _total_bookings(self, bookings):
+        return sum(bookings.itervalues())
+
+    def _accumulate_bookings(self, bookings, child):
+        for k, v in child.iteritems():
+            bookings[k] = bookings.get(k, 0) + v
+        return bookings
+
+    def _task_bookings(self, task):
+        bookings = {}
+        for r in task.resources:
+            rname = self._resource_display(r)
+            if not rname:
+                continue
+            b = self._task_resource_bookings(task, r)
+            v = self._value(task, r, b)
+            tb = bookings.get(rname, 0) + v
+            if tb > 0:
+                bookings[rname] = tb
+
+        if bookings:
+            return bookings
+
+        for t in task.tasks:
+            if not self._task_or_children_visible(t):
+                continue
+            self._accumulate_bookings(bookings, self._task_bookings(t))
+        return bookings
+
+    def report(self, output, language):
+        total = Decimal("0")
+        body = []
+        for name, t in self.tasks:
+            bookings = self._task_bookings(t)
+            if not bookings:
+                continue
+            partial = self._total_bookings(bookings)
+            if not self._task_children_visible(t):
+                total += partial
+
+            if not self.no_resources:
+                bookings = list(bookings.iteritems())
+                bookings.sort(cmp=lambda a, b: cmp(a[0], b[0]))
+                r, v = bookings[0]
+                body.append((name, self._value2str(v), latex_escape(r)))
+                for r, v in bookings[1:]:
+                    body.append(("", self._value2str(v), latex_escape(r)))
+            else:
+                body.append((name, self._value2str(partial)))
+
+        self._output(output, language, total, body)
+
+
+class TaskLoadReport(AbstractTaskReport):
+    def _value2str(self, v):
+        return str(v)
+
+    def _value(self, task, resource, booking):
+        return int(booking / 3600)
+
+    def _output(self, output, language, total, body):
+        if language == "english":
+            header = ("Task", "Load (hours)", "Professional")
+            footer = ("Total", str(total), "")
+            caption = "Task resource load."
+        elif language == "portuguese":
+            header = ("Tarefa", "Carga (horas)", "Profissional")
+            footer = ("Total", str(total), "")
+            caption = "Distribuição de carga por tarefas."
+        else:
+            raise ValueError("language %s not supported" % language)
+
+        if self.no_resources:
+            header = header[:-1]
+            footer = footer[:-1]
+            cols = "lr"
+        else:
+            cols = "lrl"
+
+        table_gen(output, body, header, footer, caption, "taskload", cols,
+                  escape=False)
+
+
+class TaskPriceReport(AbstractTaskReport):
+    def __init__(self, doc, scenario="plan",
+                 selected_tasks=None, just_toplevel_tasks=False,
+                 just_no_leafs_tasks=False, show_milestones=False,
+                 selected_resources=None, just_toplevel_resources=False,
+                 just_no_leafs_resources=False, no_resources=False):
+        AbstractTaskReport.__init__(
+            self, doc, scenario, selected_tasks, just_toplevel_tasks,
+            just_no_leafs_tasks, show_milestones,
+            selected_resources, just_toplevel_resources,
+            just_no_leafs_resources, no_resources)
+        for p in doc.prjs.itervalues():
+            if p.currency:
+                self.currency = p.currency
+                self.prj = p
+                break
+        else:
+            raise ValueError("could not discover project and currency.")
+
+    def _value2str(self, v):
+        s = apply_currency_format(self.prj.currency_format, v)
+        return latex_escape(s)
+
+    def _value(self, task, resource, booking):
+        wage = None
+        r = resource
+        while wage is None and r is not None:
+            try:
+                wage = r.wage
+            except AttributeError:
+                r = r.parent
+
+        if wage is None:
+            raise SystemExit("no wage for resource %s" % resource.id)
+
+        booking = int(booking / 3600)
+        return booking * wage
+
+    def _output(self, output, language, total, body):
+        currency = latex_escape(self.currency)
+        if language == "english":
+            header = ("Task", "Value (%s)" % currency, "Professional")
+            footer = ("Total", self._value2str(total), "")
+            caption = "Project tasks prices."
+        elif language == "portuguese":
+            header = ("Tarefa", "Valor (%s)" % currency, "Profissional")
+            footer = ("Total", self._value2str(total), "")
+            caption = "Distribuição de preços por tarefas."
+        else:
+            raise ValueError("language %s not supported" % language)
+
+        if self.no_resources:
+            header = header[:-1]
+            footer = footer[:-1]
+            cols = "lr"
+        else:
+            cols = "lrl"
+
+        table_gen(output, body, header, footer, caption, "taskprice", cols,
+                  escape=False)
+
+
+def resource_load_report(output, doc, options):
+    report = ResourceLoadReport(
+        doc, options.scenario, options.resource,
+        options.resource_toplevel, options.resource_no_leafs)
+    report.report(output, options.language)
+
+
+def task_load_report(output, doc, options):
+    report = TaskLoadReport(
+        doc, options.scenario,
+        options.task, options.task_toplevel, options.task_no_leafs,
+        options.milestone, options.resource, options.resource_toplevel,
+        options.resource_no_leafs, options.no_resources)
+    report.report(output, options.language)
+
+
+def parse_prices(doc, options):
+    if not options.original_tjp:
+        raise SystemExit("missing parameter --original-tjp with taskjuggler "
+                         "project file to parse price values.")
+
+    for p in doc.prjs.itervalues():
+        if p.daily_working_hours:
+            daily_hours = p.daily_working_hours
+            break
+    else:
+        daily_hours = 8
+
+    def skip_line(f):
+        c = f.read(1)
+        i = 1
+        while c and c != '\n':
+            c = f.read(1)
+            i += 1
+        return i
+
+    def skip_quotes(f, quote):
+        c = f.read(1)
+        i = 1
+        escape = False
+        while c:
+            if escape:
+                escape = False
+            else:
+                if c == "\\":
+                    escape = True
+                elif c == quote:
+                    break
+            c = f.read(1)
+            i += 1
+        return i
+
+    f = open(options.original_tjp, "rb")
+    i = 0
+    c = f.read(1)
+    token = ""
+    delim = (" ", "\t", "\n", "{", "}")
+    quotes = ('"', "'")
+    rate_pos = 0
+    resource_pos = 0
+    resource_id = None
+    while c and i < 100000:
+        if c == "#":
+            i += skip_line(f)
+        elif c in quotes:
+            i += skip_quotes(f, c)
+        elif c in delim:
+            if resource_pos == 2 and c == "{":
+                resource_pos = 3
+            elif token:
+                if token == "resource":
+                    rate_pos = 0
+                    resource_pos = 1
+                    resource_id = None
+                elif token == "rate" and resource_pos == 3 and resource_id:
+                    rate_pos = 1
+                else:
+                    if resource_pos == 1:
+                        rate_pos = 0
+                        resource_pos = 2
+                        resource_id = token
+                    elif rate_pos == 1:
+                        v = Decimal(token) / daily_hours
+                        doc.resources[resource_id].wage = v
+                        rate_pos = 0
+
+                token = ""
+        else:
+            token += c
+
+        i += 1
+        c = f.read(1)
+    f.close()
+
+
+def resource_price_report(output, doc, options):
+    parse_prices(doc, options)
+    report = ResourcePriceReport(
+        doc, options.scenario, options.resource,
+        options.resource_toplevel, options.resource_no_leafs)
+    report.report(output, options.language)
+
+
+def task_price_report(output, doc, options):
+    parse_prices(doc, options)
+    report = TaskPriceReport(
+        doc, options.scenario,
+        options.task, options.task_toplevel, options.task_no_leafs,
+        options.milestone, options.resource, options.resource_toplevel,
+        options.resource_no_leafs, options.no_resources)
+    report.report(output, options.language)
+
+
+def project_price_report(output, doc, options):
+    parse_prices(doc, options)
+    report = ProjectPriceReport(
+        doc, options.scenario, options.resource,
+        options.resource_toplevel, options.resource_no_leafs)
+    report.report(output, options.language)
+
+
+def payments_report(output, doc, options):
+    split = []
+    if not options.payment_split:
+        split.append(("", Decimal("100.00")))
+    else:
+        total = Decimal("0.00")
+        for s in options.payment_split:
+            try:
+                offset, percent = s.split(":")
+            except ValueError:
+                raise SystemExit("invalid payment split argument: %r" % s)
+            percent = Decimal(percent)
+            total += percent
+            split.append((offset, percent))
+
+        if total < Decimal("100.00"):
+            split.append(("", Decimal("100.00") - total))
+
+    parse_prices(doc, options)
+    report = PaymentsReport(
+        doc, options.payment_header, options.payment_reference, split,
+        options.scenario, options.resource, options.resource_toplevel,
+        options.resource_no_leafs)
+    report.report(output, options.language)
+
+
+if __name__ == "__main__":
+    known_reports = {
+        "resource-load": resource_load_report,
+        "resource-price": resource_price_report,
+        "task-load": task_load_report,
+        "task-price": task_price_report,
+        "project-price": project_price_report,
+        "payments": payments_report,
+        }
+
+    usage = "usage: %prog [options] <report-type> <input.tjx> <outfile>"
+    desc = "Known reports: %s" % ", ".join(known_reports.iterkeys())
+    parser = optparse.OptionParser(usage=usage, description=desc)
+
+
+    language_choices = ("english", "portuguese")
+    parser.add_option("-L", "--language", type="choice",
+                      choices=language_choices, default=language_choices[0],
+                      help=("language to use, choices are: %s. "
+                            "Default: %%default.") % (language_choices,))
+    parser.add_option("-n", "--scenario", default="plan",
+                      help=("scenario to use. Default: %default."))
+
+    # XXX hack, need to ask TaskJuggler to add those to xml
+    parser.add_option("--original-tjp",
+                      help=("original taskjuggler project file (.tjp) to "
+                            "use to discover price/wage values. "
+                            "This information is not available in XML "
+                            "and must be parsed separately"))
+
+    group = optparse.OptionGroup(parser, "Resource Options",
+                        ("These options are used to specify resource usage. "
+                         "If not used, every resource will be used. "
+                         "If explicit resources are given with -R (--resource) "
+                         "then just those will be used. Otherwise you can "
+                         "select just toplevel or non-leafs."))
+    parser.add_option_group(group)
+    group.add_option("-R", "--resource", default=None, action="append",
+                     help=("use given resource id. If used will limit "
+                           "resources to explicitly specified and in the "
+                           "given order. May be used more than once."))
+    group.add_option("--resource-toplevel", default=False,
+                     action="store_true",
+                     help=("if given and no more specific specification is "
+                           "provided, this will force just toplevel entries "
+                           "to be displayed and use alphabetical order."))
+    group.add_option("--resource-no-leafs", default=False, action="store_true",
+                     help=("if given and no more specific specification is "
+                           "provided, this will force just non leafs entries "
+                           "to be displayed and use alphabetical-tree order."))
+
+    group = optparse.OptionGroup(parser, "Task Options",
+                        ("These options are used to specify task usage. "
+                         "If not used, every task will be used. "
+                         "If explicit tasks are given with -T (--task) "
+                         "then just those will be used. Otherwise you can "
+                         "select just toplevel or non-leafs."))
+    parser.add_option_group(group)
+    group.add_option("-T", "--task", default=None, action="append",
+                      help=("use given task id. If used will limit tasks to "
+                            "explicitly specified and in the given order. "
+                            "May be used more than once."))
+    group.add_option("--task-toplevel", default=False,
+                     action="store_true",
+                     help=("if given and no more specific specification is "
+                           "provided, this will force just toplevel entries "
+                           "to be displayed and use alphabetical order."))
+    group.add_option("--task-no-leafs", default=False, action="store_true",
+                     help=("if given and no more specific specification is "
+                           "provided, this will force just non leafs entries "
+                           "to be displayed and use alphabetical-tree order."))
+    group.add_option("-m", "--milestone", default=False, action="store_true",
+                     help=("show milestone in task report."))
+    group.add_option("--no-resources", default=False, action="store_true",
+                     help=("if given, no resources will be detailed for tasks"))
+
+    group = optparse.OptionGroup(parser, "Payment Options",
+                        ("These options guide payments report."))
+    parser.add_option_group(group)
+    group.add_option("--payment-header", default="\\#", action="store",
+                     help=("String to use verbatim as first column header."))
+    group.add_option("--payment-reference", default="$T_0$", action="store",
+                     help=("String to use as refence, used verbatim. "
+                           "Default: %default"))
+    group.add_option("--payment-split", default=None, action="append",
+                     help=("How to split payment. May be used more than once. "
+                           "Format is: 'time-offset:percent', separated by "
+                           "':' and time-offset is used verbatim."))
+
+
+    options, args = parser.parse_args()
+    try:
+        report = args[0]
+        if report not in known_reports:
+            raise SystemExit("unsupported report: %s. Choose one of: %s" %
+                             (report, ", ".join(known_reports.iterkeys())))
+    except IndexError:
+        parser.print_help()
+        raise SystemExit("Missing parameter: report-type")
+    try:
+        infile = args[1]
+    except IndexError:
+        parser.print_help()
+        raise SystemExit("Missing parameter: input.tjx")
+    try:
+        outfile = args[2]
+    except IndexError:
+        parser.print_help()
+        raise SystemExit("Missing parameter: outfile")
+
+    doc = Document(infile)
+    f = open(outfile, "w")
+    known_reports[report](f, doc, options)
+    f.close()
+

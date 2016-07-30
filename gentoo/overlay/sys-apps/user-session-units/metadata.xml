@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE pkgmetadata SYSTEM "http://www.gentoo.org/dtd/metadata.dtd">
+<pkgmetadata>
+	<maintainer>
+		<email>barbieri@gmail.com</email>
+		<name>Gustavo Sverzut Barbieri</name>
+	</maintainer>
+	<use>
+		<flag name="enlightenment">Support <pkg>x11-wm/enlightenment</pkg>.</flag>
+		<flag name="xfce">Support <pkg>xfce-base/xfce4-session</pkg>.</flag>
+		<flag name="xfwm">Support <pkg>xfce-base/xfwm4</pkg>.</flag>
+		<flag name="gnome">Support <pkg>gnome-base/gnome-session</pkg>.</flag>
+		<flag name="kde">Support <pkg>kde-base/kdebase-startkde</pkg>.</flag>
+		<flag name="mythtv">Support <pkg>media-tv/mythtv</pkg>.</flag>
+	</use>
+</pkgmetadata>

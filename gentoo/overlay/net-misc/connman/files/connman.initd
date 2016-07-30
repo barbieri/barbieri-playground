@@ -1,0 +1,22 @@
+#!/sbin/runscript
+# Copyright 1999-2010 Gentoo Foundation
+# Distributed under the terms of the GNU General Purpose License v2
+# $Header: /var/cvsroot/gentoo-x86/net-misc/connman/files/connman.initd,v 1.2 2010/02/01 14:12:27 dagger Exp $
+
+depend() {
+   need dbus
+}
+
+start() {
+   ebegin "Starting Connection Manager"
+   start-stop-daemon --start --quiet --exec /usr/sbin/connmand -- ${CONNMAN_OPTS}
+   eend $?
+}
+
+stop() {
+   ebegin "Stopping Connection Manager"
+   start-stop-daemon --stop --quiet --exec /usr/sbin/connmand
+   eend $?
+}
+
+# vim: set ft=gentoo-init-d ts=3 sw=3 et:

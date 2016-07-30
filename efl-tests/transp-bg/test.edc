@@ -1,0 +1,298 @@
+collections {
+   group {
+      name: "button";
+
+      images {
+         image: "bt_base.png" COMP;
+         image: "bt_glow.png" COMP;
+         image: "bt_hilight.png" COMP;
+         image: "bt_shine.png" COMP;
+      }
+
+      parts {
+         part {
+            name: "bg-glow";
+            type: IMAGE;
+            mouse_events: 0;
+            description {
+               state: "default" 0.0;
+               color: 255 255 255 0;
+               visible: 0;
+               rel1 {
+                  relative: 0.0 0.0;
+                  offset: -8 -4;
+                  to: "bg";
+               }
+               rel2 {
+                  relative: 1.0 1.0;
+                  offset: 7 3;
+                  to: "bg";
+               }
+               image {
+                  normal: "bt_glow.png";
+                  border: 12 12 9 9;
+               }
+            }
+            description {
+               state: "visible" 0.0;
+               inherit: "default" 0.0;
+               color: 255 255 255 255;
+               visible: 1;
+            }
+         }
+
+         programs {
+            program {
+               name: "gui,action,focus,in";
+               signal: "load";
+               action: STATE_SET "visible" 0.0;
+               transition: LINEAR 0.2;
+               target: "bg-glow";
+               after: "gui,action,focus,in,pulse-1";
+            }
+            program {
+               name: "gui,action,focus,in,pulse-1";
+               action: STATE_SET "default" 0.0;
+               transition: LINEAR 1;
+               target: "bg-glow";
+               after: "gui,action,focus,in,pulse-2";
+            }
+            program {
+               name: "gui,action,focus,in,pulse-2";
+               action: STATE_SET "visible" 0.0;
+               transition: LINEAR 1;
+               target: "bg-glow";
+               after: "gui,action,focus,in,pulse-1";
+            }
+         }
+
+         part {
+            name: "bg";
+            type: IMAGE;
+            mouse_events: 0;
+            description {
+               state: "default" 0.0;
+               rel1 {
+                  relative: 0.0 0.0;
+                  offset: 0 0;
+               }
+               rel2 {
+                  relative: 1.0 1.0;
+                  offset: -1 -1;
+               }
+               image {
+                  normal: "bt_base.png";
+                  border: 7 7 7 7;
+               }
+            }
+         }
+
+         part {
+            name: "gui.text";
+            type: TEXT;
+            effect: SOFT_SHADOW;
+            mouse_events: 0;
+            description {
+               state: "default" 0.0;
+               align: 0 0.5;
+               color: 224 224 224 255;
+               color3: 0 0 0 64;
+               color_class: "button_text";
+               rel1 {
+                  relative: 0.0 0.0;
+                  offset: 7 7;
+               }
+               rel2 {
+                  relative: 1.0 1.0;
+                  offset: -8 -8;
+               }
+               text {
+                  font: "Sans Serif:style=Bold";
+                  size: 14;
+                  text: "text";
+                  min: 1 1;
+               }
+            }
+         }
+
+         part {
+            name: "over1";
+            mouse_events: 0;
+            description {
+               state: "default" 0.0;
+               rel1.to: "bg";
+               rel2 {
+                  relative: 1.0 0.5;
+                  to: "bg";
+               }
+               image {
+                  normal: "bt_hilight.png";
+                  border: 7 7 7 0;
+               }
+            }
+            description {
+               state: "clicked" 0.0;
+               inherit: "default" 0.0;
+               rel1 {
+                  relative: 0.0 0.0;
+                  offset: 1 1;
+                  to: "bg";
+               }
+               rel2 {
+                  relative: 1.0 0.5;
+                  offset: 0 1;
+                  to: "bg";
+               }
+            }
+         }
+
+         part {
+            name: "over2";
+            mouse_events: 0;
+            description {
+               state: "default" 0.0;
+               rel1.to: "bg";
+               rel2.to: "bg";
+               image {
+                  normal: "bt_shine.png";
+                  border: 7 7 7 7;
+               }
+            }
+            description {
+               state: "clicked" 0.0;
+               inherit: "default" 0.0;
+               rel1 {
+                  relative: 0.0 0.0;
+                  offset: 1 1;
+                  to: "bg";
+               }
+               rel2 {
+                  relative: 1.0 1.0;
+                  offset: 0 0;
+                  to: "bg";
+               }
+            }
+         }
+
+         part {
+            name: "event_area";
+            type: RECT;
+            mouse_events: 1;
+            description {
+               state: "default" 0.0;
+               color: 255 255 255 0;
+               rel1 {
+                  relative: 0.0 0.0;
+                  offset: 0 0;
+                  to: "bg";
+               }
+               rel2 {
+                  relative: 1.0 1.0;
+                  offset: -1 -1;
+                  to: "bg";
+               }
+            }
+         }
+
+         programs {
+            program {
+               name: "clicked";
+               signal: "mouse,clicked,1";
+               source: "event_area";
+               action: SIGNAL_EMIT "gui,action,click" "";
+            }
+
+            program {
+               signal: "mouse,down,1";
+               source: "event_area";
+               action: STATE_SET "clicked" 0.0;
+               target: "over1";
+               target: "over2";
+            }
+
+            program {
+               signal: "mouse,up,1";
+               source: "event_area";
+               action: STATE_SET "default" 0.0;
+               target: "over1";
+               target: "over2";
+            }
+         }
+      }
+   }
+
+   group {
+      name: "main";
+
+      parts {
+         part {
+            name: "b1";
+            type: GROUP;
+            source: "button";
+            description {
+               state: "default" 0.0;
+               rel1 {
+                  relative: 0.0 0.0;
+                  offset: 15 15;
+               }
+               rel2 {
+                  relative: 0.5 0.5;
+                  offset: -16 -16;
+               }
+            }
+         }
+
+         part {
+            name: "b2";
+            type: GROUP;
+            source: "button";
+            description {
+               state: "default" 0.0;
+               rel1 {
+                  relative: 0.5 0.0;
+                  offset: 15 15;
+               }
+               rel2 {
+                  relative: 1.0 0.5;
+                  offset: -16 -16;
+               }
+            }
+         }
+
+         part {
+            name: "b3";
+            type: GROUP;
+            source: "button";
+            description {
+               state: "default" 0.0;
+               rel1 {
+                  relative: 0.0 0.5;
+                  offset: 15 15;
+               }
+               rel2 {
+                  relative: 0.5 1.0;
+                  offset: -16 -16;
+               }
+            }
+         }
+
+         part {
+            name: "b4";
+            type: GROUP;
+            source: "button";
+            description {
+               state: "default" 0.0;
+               rel1 {
+                  relative: 0.5 0.5;
+                  offset: 15 15;
+               }
+               rel2 {
+                  relative: 1.0 1.0;
+                  offset: -16 -16;
+               }
+            }
+         }
+
+      }
+   }
+}

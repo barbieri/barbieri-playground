@@ -1,0 +1,84 @@
+#!/bin/bash
+
+REGEXP="$1"
+shift
+
+if [ -z "$REGEXP" ]; then
+    cat <<EOF
+Usage:
+
+    $0 <extended-regexp> [filename-match] [root-directory] [extra-grep-options]
+
+Where:
+
+    <extended-regexp>    is what "grep -E" understands.
+    [filename-match]     is a match, or a ; separated list of matches to be used
+                         with "find". matches started with - are negated.
+    [root-directory]     is where to look for files.
+    [extra-grep-options] will be given to grep, like -i
+
+Environment Variables:
+
+    \$CASE_INSENSITIVE=1 makes find use case insensitive (-iname).
+    \$NO_COLOR=1         do not use color for grep output.
+
+EOF
+    exit 1
+fi
+
+MATCH="$1"
+shift
+DIR="$1"
+shift
+
+if [ ${NO_COLOR:-0} -eq 0 ]; then
+    GREP_COLOR="always"
+else
+    GREP_COLOR="never"
+fi
+
+if [ ${CASE_INSENSITIVE:-0} -eq 0 ]; then
+    MATCH_NAME="-name"
+else
+    MATCH_NAME="-iname"
+fi
+
+PRUNE_MATCHES=""
+
+MATCH_EXP=""
+ORIG_IFS="$IFS"
+IFS=";"
+for p in $MATCH; do
+    v=${p/#-/}
+    M="$MATCH_NAME $v"
+    if [ "$v" = "$p" ]; then
+        if [ ! -z "$MATCH_EXP" ]; then
+            MATCH_EXP="$MATCH_EXP -o $M"
+        else
+            MATCH_EXP="$M"
+        fi
+    else
+        PRUNE_MATCHES="-o $M"
+    fi
+done
+IFS="$ORIG_IFS"
+
+if [ ! -z "$MATCH_EXP" ]; then
+    MATCH_EXP="( $MATCH_EXP )"
+fi
+
+find $DIR \
+    '(' -path '*/SCCS' \
+    -o -path '*/RCS' \
+    -o -path '*/CVS' \
+    -o -path '*/MCVS' \
+    -o -path '*/.svn' \
+    -o -path '*/.git' \
+    -o -path '*/.hg' \
+    -o -path '*/.bzr' \
+    -o -path '*/_MTN' \
+    -o -path '*/_darcs' \
+    -o -path '*/\{arch\}' \
+    $PRUNE_MATCHES ')' -prune -o \
+    -type f $MATCH_EXP -print0 | \
+    xargs -0 grep -HnUE -e "$REGEXP" --color=${GREP_COLOR} $*

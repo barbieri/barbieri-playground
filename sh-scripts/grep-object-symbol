@@ -1,0 +1,48 @@
+#!/bin/bash
+
+REGEXP="$1"
+shift
+
+if [ -z "$REGEXP" ]; then
+    cat <<EOF
+Usage:
+
+    $0 <extended-regexp> <object-file1> ... [object-fileN]
+
+Where:
+
+    <extended-regexp>    is what "grep -E" understands.
+
+Environment Variables:
+
+    \$NO_COLOR=1         do not use color for grep output.
+    \$DEMANGLE=1         demangle C++ names
+    \$SHORTNAME=1        just short file name (basename).
+
+EOF
+    exit 1
+fi
+
+if [ ${NO_COLOR:-0} -eq 0 ]; then
+    GREP_COLOR="always"
+else
+    GREP_COLOR="never"
+fi
+
+NM_OPTS=""
+
+if [ ${DEMANGLE:-0} -ne 0 ]; then
+    NM_OPTS+=" --demangle"
+fi
+
+for f in $@; do
+    if [ ${SHORTNAME:-0} -eq 0 ]; then
+        name="$f"
+    else
+        name=`basename "$f"`
+    fi
+    nm $f $NM_OPTS | grep -h -E $REGEXP --color=${GREP_COLOR} | \
+    while read line; do
+        echo "$name: $line"
+    done
+done

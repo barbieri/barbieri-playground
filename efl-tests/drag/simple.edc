@@ -1,0 +1,80 @@
+images {
+   image: "background.png" LOSSY 95;
+}
+
+collections {
+   group {
+      name: "main";
+
+      parts {
+         part {
+            name: "base";
+            mouse_events: 0;
+            description {
+               state: "default" 0.0;
+               color: 255 255 255 255;
+               rel1 {
+                  relative: 0.0 0.0;
+                  offset: 0 0;
+               }
+               rel2 {
+                  relative: 1.0 1.0;
+                  offset: 0 0;
+               }
+                image {
+                  normal: "background.png";
+                  border: 100 100 60 100;
+               }
+            }
+         }
+
+
+         part {
+            name: "drag_base";
+            type: RECT;
+            mouse_events: 1;
+            description {
+               state: "default" 0.0;
+               color: 255 255 255 100;
+               rel1 {
+                  relative: 0.2 0.5;
+                  offset: 0 -20;
+               }
+               rel2 {
+                  relative: 0.8 0.5;
+                  offset: 0 19;
+               }
+            }
+         }
+
+
+         part {
+            name: "drag_knob";
+            type: RECT;
+            mouse_events: 1;
+            dragable {
+               confine: "drag_base";
+               x: 1 1 0;
+               y: 0 0 0;
+            }
+
+            description {
+               state: "default" 0.0;
+               color: 255 255 0 255;
+               min: 40 40;
+               fixed: 1 1;
+               rel1 {
+                  to: "drag_base";
+                  relative: 0.5 0.5;
+                  offset: 0 0;
+               }
+               rel2 {
+                  to: "drag_base";
+                  relative: 0.5 0.5;
+                  offset: 0 0;
+               }
+            }
+         }
+      }
+   }
+}

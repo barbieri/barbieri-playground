@@ -1,0 +1,47 @@
+images {
+  image: "background.png" COMP;
+}
+
+collections {
+    group {
+        name, "Main";
+        min, 400 400;
+
+        parts {
+            part {
+                name: "background";
+                type: RECT;
+                mouse_events: 0;
+                description {
+		    state: "default" 0.0;
+                    color: 255 255 255 255;
+                    rel1 { relative: 0.0 0.0; }
+                    rel2 { relative: 1.0 1.0; }
+                }
+            }
+            part {
+                name, "foo";
+                type, IMAGE;
+
+                description {
+                    state, "default" 0.0;
+                    align, 0.5 0.5;
+
+                    rel1 {
+                        relative, 0 0;
+                    }
+                    rel2 {
+                        relative, 1.0 1.0;
+                    }
+
+                    image {
+                        normal: "background.png";
+                    }
+
+                    //color: 255 255 255 255;
+                    color: 255 0 0 255;
+                }
+            }
+        }
+    }
+}

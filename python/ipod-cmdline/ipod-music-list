@@ -1,0 +1,74 @@
+#!/usr/bin/env python
+
+# Based on libgpod examples.
+
+import os.path
+import gpod
+from optparse import OptionParser
+
+parser = OptionParser(description="List all music and playlists in your ipod.")
+parser.add_option("-m", "--mountpoint", dest="mountpoint",
+                  default="/mnt/ipod",
+                  help="use iPod at MOUNTPOINT", metavar="MOUNTPOINT")
+parser.add_option("-l", "--playlist", dest="playlist",
+                  help="list only PLAYLIST",
+                  metavar="PLAYLIST")
+parser.add_option("-M", "--missing", dest="missing",
+                  help="list only missing locally (your PC)",
+                  action="store_true", default=False)
+(options, args) = parser.parse_args()
+
+chosen_playlist = None
+if options.playlist:
+    try:
+        chosen_playlist = int(options.playlist)
+    except ValueError:
+        chosen_playlist = options.playlist
+
+db = gpod.Database(options.mountpoint)
+for playlist in db.Playlists:
+    if chosen_playlist and \
+           (playlist.id != chosen_playlist) and \
+           (playlist.name != chosen_playlist):
+        continue
+
+    if playlist.master:
+        t = "MASTER"
+    elif playlist.podcast:
+        t = "PODCAST"
+    elif playlist.smart:
+        t = "SMART"
+    else:
+        t = "REGULAR"
+    print "P: %d: %s %r" % (playlist.id, t, playlist.name)
+
+    for track in playlist:
+        if track["mediatype"] != gpod.ITDB_MEDIATYPE_AUDIO:
+            continue
+        try:
+            f = track["userdata"]["filename_utf8"]
+            missing = not os.path.isfile(f)
+        except KeyError, e:
+            f = None
+            missing = True
+
+        try:
+            ip = track["userdata"]["filename_ipod"]
+            ipf = options.mountpoint + ip.replace(':', os.path.sep)
+            ipmissing = not os.path.isfile(ipf)
+        except KeyError, e:
+            ip = None
+            ipmissing = True
+
+        if options.missing and not (missing or ipmissing):
+            continue
+
+        print (" T: "
+               "%r %r %r "
+               "%d %d %r %r %r %r %r %r") % (
+            track["artist"], track["album"], track["genre"],
+            track["tracklen"], track["track_nr"], track["title"],
+            bool(track.get_coverart()), missing, f, ipmissing, ip)
+
+# no sync should be done.
+# db.close()

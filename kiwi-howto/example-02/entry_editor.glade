@@ -1,0 +1,93 @@
+<?xml version="1.0" standalone="no"?> <!--*- mode: xml -*-->
+<!DOCTYPE glade-interface SYSTEM "http://gazpacho.sicem.biz/gazpacho-0.1.dtd">
+<glade-interface>
+    <widget class="GtkWindow" id="entry_editor">
+        <property name="default_height">250</property>
+        <property name="default_width">440</property>
+        <child>
+            <widget class="GtkFrame" id="frame1">
+                <property name="label" context="yes" translatable="yes">Entry Editor</property>
+                <child>
+                    <widget class="GtkTable" id="table1">
+                        <property name="border_width">3</property>
+                        <property name="column_spacing">3</property>
+                        <property name="row_spacing">3</property>
+                        <property name="visible">True</property>
+                        <child>
+                            <widget class="GtkLabel" id="label1">
+                                <property name="label" context="yes" translatable="yes">Name:</property>
+                                <property name="visible">True</property>
+                                <property name="xalign">1.0</property>
+                            </widget>
+                            <packing>
+                                <property name="x_options">fill</property>
+                            </packing>
+                        </child>
+                        <child>
+                            <widget class="GtkLabel" id="label2">
+                                <property name="label" context="yes" translatable="yes">Address:</property>
+                                <property name="visible">True</property>
+                                <property name="xalign">1.0</property>
+                            </widget>
+                            <packing>
+                                <property name="bottom_attach">2</property>
+                                <property name="top_attach">1</property>
+                                <property name="x_options">fill</property>
+                            </packing>
+                        </child>
+                        <child>
+                            <widget class="GtkLabel" id="label3">
+                                <property name="label" context="yes" translatable="yes">Phone:</property>
+                                <property name="visible">True</property>
+                                <property name="xalign">1.0</property>
+                            </widget>
+                            <packing>
+                                <property name="bottom_attach">3</property>
+                                <property name="top_attach">2</property>
+                                <property name="x_options">fill</property>
+                            </packing>
+                        </child>
+                        <child>
+                            <widget class="kiwi+ui+widgets+entry+Entry" id="name">
+                                <property name="data_type">str</property>
+                                <property name="is_focus">True</property>
+                                <property name="mandatory">True</property>
+                                <property name="model_attribute">name</property>
+                            </widget>
+                            <packing>
+                                <property name="left_attach">1</property>
+                                <property name="right_attach">2</property>
+                            </packing>
+                        </child>
+                        <child>
+                            <widget class="kiwi+ui+widgets+entry+Entry" id="address">
+                                <property name="data_type">str</property>
+                                <property name="mandatory">True</property>
+                                <property name="model_attribute">address</property>
+                            </widget>
+                            <packing>
+                                <property name="bottom_attach">2</property>
+                                <property name="left_attach">1</property>
+                                <property name="right_attach">2</property>
+                                <property name="top_attach">1</property>
+                            </packing>
+                        </child>
+                        <child>
+                            <widget class="kiwi+ui+widgets+entry+Entry" id="phone">
+                                <property name="data_type">str</property>
+                                <property name="mandatory">True</property>
+                                <property name="model_attribute">phone</property>
+                            </widget>
+                            <packing>
+                                <property name="bottom_attach">3</property>
+                                <property name="left_attach">1</property>
+                                <property name="right_attach">2</property>
+                                <property name="top_attach">2</property>
+                            </packing>
+                        </child>
+                    </widget>
+                </child>
+            </widget>
+        </child>
+    </widget>
+</glade-interface>

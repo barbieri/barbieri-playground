@@ -1,0 +1,79 @@
+This is a personal fork of xmacro (http://xmacro.sourceforge.net/), fixed to compile with new systems and fit my use.
+
+Major modifications:
+ * compile with recent C++;
+ * fixed deprecated warnings;
+ * indent and whitespace-cleanup;
+ * xmacroplay supports delays in floating point seconds;
+ * xmacrorec was replaced with xmacrorec2 (uses xrecord, cleaner);
+ * xmacrorec now records delays between captured events, useful for fluid
+   and animated uis where you must wait a bit until you continue.
+
+Slightly modified original readme follows:
+
+xmacrorec:
+ Grabs all the control over your local display and send the mouse and
+keyboard events to the remote display. In the meantime it emits KeyStrPress,
+KeyStrRelease, ButtonPress and ButtonRelease lines to the standard output.
+It emits MotionNotify lines only if the event struct of the above four
+events contains different coordinates than the previous event or a mouse
+button is pressed during the movement.
+
+xmacroplay:
+ Reads lines from the standard input. It can understand the following lines:
+Delay <sec>		- delays the program with <sec> secundums
+ButtonPress <n>		- sends a ButtonPress event with button <n>
+			  this emulates the pressing of the mouse button <n>
+ButtonRelease <n>	- sends a ButtonRelease event with button <n>
+			  this emulates the releaseing of the mouse button <n>
+MotionNotify <x> <y>	- sends a MotionNotify event
+			  this emulates the movment of the mouse
+KeyCodePress <kc>	- sends a KeyPress event with the keycode <kc>
+			  in this case you must know the keycodes of the
+			  remote server
+KeyCodeRelease <kc>	- sends a KeyRelease event with the keycode <kc>
+			  in this case you must know the keycodes of the
+			  remote server
+KeySymPress <ks>	- sends a KeyPress event with the keysym <ks>
+			  converted to the appropriate keycode on the remote
+			  server
+KeySymRelease <ks>	- sends a KeyRelease event with the keysym <ks>
+			  converted to the appropriate keycode on the remote
+			  server
+KeySym <ks>		- send both KeyPress and KeyRelease events with the
+			  keysym <ks> converted to the appropriate keycode
+			  on the remote server
+KeyStrPress <ksname>	- sends a KeyPress event with the keysym name
+			  <ksname> converted to the appropriate keycode on
+			  the remote server; standard KeySym names are
+			  obtained from <X11/keysymdef.h> by removing
+			  the XK_ prefix from each name.
+KeyStrRelease <ksname>	- sends a KeyRelease event with the keysym name
+			  <ksname> converted to the appropriate keycode on
+			  the remote server; standard KeySym names are
+			  obtained from <X11/keysymdef.h> by removing
+			  the XK_ prefix from each name.
+KeyStr <ksname>		- sends both KeyPress and KeyRelease events with the
+			  keysym name <ksname> converted to the appropriate
+			  keycode on the remote server; standard KeySym
+			  names are obtained from <X11/keysymdef.h> by
+			  removing the XK_ prefix from each name.
+String <max. 1024 long string>
+			- Sends the string as single characters converted to
+			  KeyPress and KeyRelease events based on a
+			  character table in chartbl.h (currently only
+			  Latin1 is used...)
+Exec <max. 4096 long string>
+			  - Executes the command using system(), the following
+			    Replacements may be used:
+			     * %T: time as formatted by strftime %X
+			     * %D: date as formatted by strftime %x
+			     * %t: timestamp as YYYYmmdd
+			     * %n: sequential execution number, starts at 1.
+			    Execution will be aborted if system() returns
+			    non-zero.
+Screenshot <x> <y> <width> <height> <max. 4096 long filename>
+			  - Take a screenshot of a region and save to a file.
+			    The filename do replacements using the same
+			    format as "Exec" command. The values for
+			    width and height can be <=0 to use screen size.

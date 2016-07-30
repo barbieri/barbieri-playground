@@ -1,0 +1,144 @@
+// Sample EDC, of EDJE Book, example 2.1
+images {
+        image,  "background.png" LOSSY 95;
+}
+
+collections {
+   group {
+      name, "test";
+      min, 32 32;
+      max, 1024 768;
+
+      parts {
+         part {
+                name,   "background";
+                type,   IMAGE;
+                mouse_events, 0;
+
+                description {
+                        state, "default" 0.0;
+
+                        rel1 {
+                                relative, 0.0 0.0;
+                                offset, 0 0;
+                        }
+                        rel2 {
+                                relative, 1.0 1.0;
+                                offset, -1 -1;
+                        }
+                        image {
+                                normal, "background.png";
+                        }
+                }
+        }
+
+        part {
+                name,   "button";
+                type,   RECT;
+                mouse_events, 1;
+
+                description {
+                        state, "default" 0.0;
+                        min, 100 50;
+                        max, 100 50;
+                        align, 0.5 0.5;
+
+                        color, 211 168 234 255;
+
+                        rel1 {
+                                relative, 0.0 0.0;
+                                offset, 0 0;
+                        }
+                        rel2 {
+                                relative, 1.0 1.0;
+                                offset, -1 -1;
+                        }
+                }
+                description {
+                        state, "clicked" 0.0;
+                        min, 100 50;
+                        max, 100 50;
+                        align, 0.5 0.5;
+
+                        color, 170 89 214 255;
+
+                        rel1 {
+                                relative, 0.0 0.0;
+                                offset, 0 0;
+                        }
+                        rel2 {
+                                relative, 1.0 1.0;
+                                offset, -1 -1;
+                        }
+                }
+        }
+        part {
+                name,   "text";
+                type,   TEXT;
+                mouse_events, 0;
+
+                description {
+                        state, "default" 0.0;
+
+                        rel1 {
+
+                                relative, 0.0 0.0;
+                                offset, 0 0;
+                                to, "button";
+                        }
+                        rel2 {
+                                relative, 1.0 1.0;
+                                offset, -1 -1;
+                                to, "button";
+                        }
+                        text {
+                                text, "Press Me";
+                                font, "redensek";
+                                size, 14;
+                                align, 0.5 0.5;
+                        }
+                }
+        }
+   } /* Close Parts */
+
+   programs {
+
+        program {
+                name, "button_click";
+                signal, "mouse,down,1";
+                source, "button";
+                action, STATE_SET "clicked" 0.0;
+                target, "button";
+                after,  "do_me";
+        }
+
+        program {
+                name, "button_unclick";
+                signal, "mouse,up,1";
+                source, "button";
+                action, STATE_SET "default" 0.0;
+                target, "button";
+                after,  "stop_doing_me";
+        }
+
+        program {
+                name, "do_me";
+                signal, "*";
+                source, "button_click";
+                action, SIGNAL_EMIT "PANTS ON" "button";
+                in, 1.0 0.0;
+                after, "do_me";
+        }
+
+        program {
+                name, "stop_doing_me";
+                signal, "*";
+                source, "button_unclick";
+                action, ACTION_STOP;
+                target, "do_me";
+        }
+
+   } /* Close Prog */
+ } /* Close Group */
+} /* Close Coll */
+

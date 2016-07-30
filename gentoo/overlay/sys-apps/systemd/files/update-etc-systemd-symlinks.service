@@ -1,0 +1,6 @@
+[Unit]
+Description=Update /etc/systemd/system symlinks for units moved to /usr
+
+[Service]
+Type=oneshot
+ExecStart=/usr/libexec/systemd/update-etc-systemd-symlinks.sh

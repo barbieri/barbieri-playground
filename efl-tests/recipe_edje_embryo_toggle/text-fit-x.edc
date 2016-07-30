@@ -1,0 +1,43 @@
+collections {
+    group {
+        name, "Main";
+        min, 400 400;
+
+        parts {
+            part {
+                name: "background";
+                type: RECT;
+                mouse_events: 0;
+                description {
+		    state: "default" 0.0;
+                    color: 255 255 255 255;
+                    rel1 { relative: 0.0 0.0; }
+                    rel2 { relative: 1.0 1.0; }
+                }
+            }
+            part {
+                name, "foo";
+                type, TEXT;
+                effect, SOFT_SHADOW;
+
+                description {
+                    state, "default" 0.0;
+                    rel1 {
+                        relative, 0 0;
+                    }
+                    rel2 {
+                        relative, 1.0 1.0;
+                    }
+
+                    text {
+                        text, "foo text";
+                        font, "Vera";
+                        size, 22;
+                        fit, 1 0;
+                    }
+                    color, 255 0 0 255;
+                }
+            }
+        }
+    }
+}

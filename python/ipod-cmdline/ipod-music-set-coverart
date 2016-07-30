@@ -1,0 +1,116 @@
+#!/usr/bin/env python
+
+# Based on libgpod examples.
+
+import gpod
+from optparse import OptionParser
+
+_covers = {}
+def find_cover(filename):
+    # DUPLICATED CODE: this is the same as in coverart-amazon and
+    # ipod-music-add. KEEP IN SYNC!
+    d = os.path.dirname(filename)
+    try:
+        return _covers[d]
+    except KeyError:
+        pass
+    try:
+        images = []
+        for f in os.listdir(d):
+            n, ext = os.path.splitext(f)
+            if ext and ext[0] == '.':
+                ext = ext[1:]
+            n = n.lower()
+            ext = ext.lower()
+            if ext in ("jpg", "jpeg", "png"):
+                path = os.path.join(d, f)
+                if os.path.isfile(path):
+                    images.append((path, n, ext))
+
+        if not images:
+            _covers[d] = None
+            return None
+
+        high_score_ext = ("jpg", "jpeg")
+        def cover_cmp(a, b):
+            a_p, a_n, a_e = a
+            b_p, b_n, b_e = b
+
+            if "front" in a_n:
+                return -1
+            elif "front" in b_n:
+                return 1
+
+            if "back" in a_n:
+                return 1
+            elif "back" in b_n:
+                return -1
+
+            if "cover" in a_n:
+                return -1
+            elif "cover" in b_n:
+                return 1
+
+            if a_e in high_score_ext:
+                return -1
+            elif b_e in high_score_ext:
+                return 1
+            return 0
+        images.sort(cover_cmp)
+        cover = _covers[d] = images[0][0]
+        return cover
+
+    except OSError:
+        return None
+
+
+parser = OptionParser(description="Update music coverart in your ipod.",
+                      epilog=("Look for image files with known patterns to be "
+                              "album/cover art, such as cover.jpg, front.jpg, "
+                              "cover.png and so on in the same folder "
+                              "as the track in your PC (not iPod). "
+                              "This will not search covers on the internet! "
+                              "You may use coverart-amazon to download them."))
+parser.add_option("-m", "--mountpoint", dest="mountpoint",
+                  default="/mnt/ipod",
+                  help="use iPod at MOUNTPOINT", metavar="MOUNTPOINT")
+parser.add_option("-l", "--playlist", dest="playlist",
+                  help="act only on PLAYLIST tracks",
+                  metavar="PLAYLIST")
+(options, args) = parser.parse_args()
+
+chosen_playlist = None
+if options.playlist:
+    try:
+        chosen_playlist = int(options.playlist)
+    except ValueError:
+        chosen_playlist = options.playlist
+
+db = gpod.Database(options.mountpoint)
+for playlist in db.Playlists:
+    if chosen_playlist and \
+           (playlist.id != chosen_playlist) and \
+           (playlist.name != chosen_playlist):
+        continue
+
+    for track in playlist:
+        if track["mediatype"] != gpod.ITDB_MEDIATYPE_AUDIO:
+            continue
+        if track.get_coverart():
+            continue
+
+        try:
+            f = track["userdata"]["filename_utf8"]
+        except:
+            continue
+
+        coverart = find_cover(f)
+        if coverart is None:
+            print "N: %r" % (f,)
+            continue
+        else:
+            track.set_coverart_from_file(coverart)
+            print "S: %r %r" % (f, coverart)
+
+db.copy_delayed_files()
+db.close()

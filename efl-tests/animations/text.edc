@@ -1,0 +1,60 @@
+fonts {
+   font: "font.ttf" "font";
+}
+
+collections {
+   group {
+      name: "main";
+
+      parts {
+         part {
+            name: "base";
+            type: RECT;
+            mouse_events: 0;
+            description {
+               state: "default" 0.0;
+               color: 255 255 255 255;
+               rel1 {
+                  relative: 0.0 0.0;
+                  offset: 0 0;
+               }
+               rel2 {
+                  relative: 1.0 1.0;
+                  offset: 0 0;
+               }
+            }
+         }
+
+         part {
+            name: "obj";
+            type: TEXT;
+            effect: OUTLINE_SOFT_SHADOW;
+
+            description {
+               state: "default" 0.0;
+               color: 255 0 0 255;
+               color2: 0 255 0 255;
+               color3: 0 0 255 255;
+               min: 10 10;
+               rel1 {
+                  relative: 0.0 0.0;
+                  offset: 0 0;
+               }
+
+               rel2 {
+                  relative: 0.0 0.0;
+                  offset: 300 30;
+               }
+
+               text {
+                  text: "Some Text Here";
+                  font: "font";
+                  size: 18;
+                  min: 1 1;
+                  fit: 0 1;
+               }
+            }
+         }
+      }
+   }
+}

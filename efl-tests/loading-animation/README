@@ -1,0 +1,5 @@
+Small test of loading animation, entirelly in EDJE.
+
+It presents a background that listen for mouse clicks:
+ - mouse,down,1: start animation
+ - mouse,up,1: stop animation

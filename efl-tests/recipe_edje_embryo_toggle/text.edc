@@ -1,0 +1,83 @@
+collections {
+    group {
+        name, "Main";
+        min, 400 400;
+
+        parts {
+            part {
+                name: "background";
+                type: RECT;
+                mouse_events: 0;
+                description {
+		    state: "default" 0.0;
+                    color: 255 255 255 255;
+                    rel1 { relative: 0.0 0.0; offset: 0 0; }
+                    rel2 { relative: 0.0 0.0; offset: 400 400; }
+                }
+            }
+            part {
+                name, "foo";
+                type, TEXT;
+                effect, SOFT_SHADOW;
+                mouse_events, 1;
+
+                description {
+                    state, "default" 0.0;
+                    rel1 {
+                        relative, 0 0;
+                        offset, 0 0;
+                    }
+                    rel2 {
+                        relative, 1.0 1.0;
+                        offset, -1 -1;
+                    }
+
+                    text {
+                        text, "foo text";
+                        font, "Vera";
+                        size, 22;
+                    }
+                    color, 255 255 255 255;
+                    color3, 0 0 0 255;
+                }
+                description {
+                    state, "out" 0.0;
+                    rel1 {
+                        relative, 0 0;
+                        offset, 0 0;
+                    }
+                    rel2 {
+                        relative, 1.0 1.0;
+                        offset, -1 -1;
+                    }
+
+                    text {
+                        text, "foo text";
+                        font, "Vera";
+                        size, 22;
+                    }
+                    color, 0 0 0 0;
+                    color3, 255 255 255 0;
+                }
+            }
+        }
+        programs {
+            program {
+                name, "mouse.in";
+                signal, "mouse,in";
+                source, "foo";
+                action, STATE_SET "out" 0.0;
+                transition, SINUSOIDAL 2.0;
+                target, "foo";
+            }
+            program {
+                name, "mouse.out";
+                signal, "mouse,out";
+                source, "foo";
+                action, STATE_SET "default" 0.0;
+                transition, SINUSOIDAL 2.0;
+                target, "foo";
+            }
+        }
+    }
+}

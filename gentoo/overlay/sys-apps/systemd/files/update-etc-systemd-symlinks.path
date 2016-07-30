@@ -1,0 +1,5 @@
+[Unit]
+Description=Update /etc/systemd/system symlinks for units moved to /usr
+
+[Path]
+PathChanged=/lib/systemd/system

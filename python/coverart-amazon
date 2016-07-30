@@ -1,0 +1,210 @@
+#!/usr/bin/env python
+
+# Based on libgpod examples.
+
+import os.path
+import sys
+import amazonproduct
+import urllib2
+from mutagen.mp3 import MP3
+import mutagen.id3
+from optparse import OptionParser
+
+REMOTE_READ_CHUNKSIZE = 1024 * 8
+
+try:
+    AWS_KEY, SECRET_KEY = os.environ["AWS_KEY"].split(":")
+except IndexError:
+    raise ValueError("AWS_KEY envvar should be in the format KEY:SECRET")
+except KeyError:
+    try:
+        f = open(os.path.expanduser("~/.amazonkey"), "r")
+        c = f.read().strip()
+        try:
+            AWS_KEY, SECRET_KEY = c.split(":")
+        except IndexError:
+            raise ValueError("~/.amazonkey should be in the format KEY:SECRET")
+    except IOError:
+        raise SystemExit("no $AWS_KEY envvar or ~/.amazonkey")
+
+_covers = {}
+def find_cover(filename):
+    # DUPLICATED CODE: this is the same as in ipod-music-add and
+    # ipod-music-set-coverart. KEEP IN SYNC!
+    d = os.path.dirname(filename)
+    try:
+        return _covers[d]
+    except KeyError:
+        pass
+    try:
+        images = []
+        for f in os.listdir(d):
+            n, ext = os.path.splitext(f)
+            if ext and ext[0] == '.':
+                ext = ext[1:]
+            n = n.lower()
+            ext = ext.lower()
+            if ext in ("jpg", "jpeg", "png"):
+                path = os.path.join(d, f)
+                if os.path.isfile(path):
+                    images.append((path, n, ext))
+
+        if not images:
+            _covers[d] = None
+            return None
+
+        high_score_ext = ("jpg", "jpeg")
+        def cover_cmp(a, b):
+            a_p, a_n, a_e = a
+            b_p, b_n, b_e = b
+
+            if "front" in a_n:
+                return -1
+            elif "front" in b_n:
+                return 1
+
+            if "back" in a_n:
+                return 1
+            elif "back" in b_n:
+                return -1
+
+            if "cover" in a_n:
+                return -1
+            elif "cover" in b_n:
+                return 1
+
+            if a_e in high_score_ext:
+                return -1
+            elif b_e in high_score_ext:
+                return 1
+            return 0
+        images.sort(cover_cmp)
+        cover = _covers[d] = images[0][0]
+        return cover
+
+    except OSError:
+        return None
+
+
+def download(url, path):
+    sys.stderr.write("Downloading %r to %r\n" % (url, path))
+    remotefile = urllib2.urlopen(url)
+    try:
+        size = int(remotefile.info()['Content-Length'])
+    except KeyError:
+        size = None
+    localfile = open(path, "wb")
+    fetched = 0
+    while True:
+        buf = remotefile.read(REMOTE_READ_CHUNKSIZE)
+        if not buf:
+            break
+        localfile.write(buf)
+        fetched += len(buf)
+        if size is not None:
+            sys.stderr.write("%03.0f%% of %d Bytes\r" %
+                             (100 * fetched / float(size), size))
+        else:
+            sys.stderr.write("Fetched %d bytes\r" % fetched)
+        sys.stderr.flush()
+    localfile.close()
+    remotefile.close()
+    if size is not None and size != fetched:
+        os.unlink(path)
+        return False
+    return True
+
+
+parser = OptionParser(usage="usage: %prog [options]",
+                      description="Find cover/album arts at amazon.com",
+                      epilog="MP3 files are read from stdin, one per line.")
+parser.add_option("-L", "--locale", dest="locale",
+                  default="us",
+                  help="Amazon services locale (us, uk...)")
+(options, args) = parser.parse_args()
+
+
+amazon = amazonproduct.API(AWS_KEY, SECRET_KEY, options.locale)
+
+
+terms_blacklist = ("Disk 1", "Disk 2", '12"', '12 "', '"', '&')
+cover_sizes = ("LargeImage", "MediumImage", "SmallImage")
+# association of ID3 field with Amazon ItemAttributes
+attrs_query = (("TPE1", "Artist"), ("TALB", "Title"))
+for f in sys.stdin.readlines():
+    if f[-1] == '\n':
+        f = f[:-1]
+
+    coverpath = find_cover(f)
+    if coverpath:
+        print "E: %r %r" % (f, coverpath)
+        continue
+
+    try:
+        mp3 = MP3(f)
+    except Exception, e:
+        sys.stderr.write("ERROR: could not parse mp3 %r: %s\n" % (f, e))
+        continue
+
+    attrs = {}
+    for attr, key in attrs_query:
+        try:
+            value = mp3[attr].text[0].encode('UTF-8','replace').lower()
+            attrs[key] = value
+        except KeyError:
+            continue
+
+    query = " + ".join(attrs.itervalues())
+    for term in terms_blacklist:
+        query = query.replace(term, "")
+
+    try:
+        result = amazon.item_search("Music", Keywords=query)
+    except Exception, e:
+        print "F: %r" % (f,)
+        sys.stderr.write("ERROR: could not search amazon %r: %s\n" % (query, e))
+        continue
+
+    useful_items = []
+    for it in result.Items.Item:
+        useful = 0
+        for a in ("Artist", "Title"):
+            if hasattr(it.ItemAttributes, a):
+                value = unicode(getattr(it.ItemAttributes, a)).lower()
+                if a in attrs and value == attrs[a]:
+                    useful += 1
+        if useful:
+            useful_items.append((useful, it))
+    useful_items.sort(cmp=lambda a, b: -cmp(a[0], b[0]))
+
+    covers = {}
+    for useful, it in useful_items:
+        try:
+            details = amazon.item_lookup(it.ASIN, ResponseGroup='Images')
+        except Exception, e:
+            sys.stderr.write("ERROR: could not lookup item %s: %s\n" %
+                             (it.ASIN, e))
+            continue
+        for id in details.Items.Item:
+            for a in cover_sizes:
+                if hasattr(id, a):
+                    covers.setdefault(a, []).append(getattr(id, a).URL)
+
+    url = None
+    for a in cover_sizes:
+        urls = covers.get(a)
+        if urls:
+            url = str(urls[0])
+            break
+    if url is None:
+        sys.stderr.write("WARNING: no cover found for %r\n" % (f,))
+        print "F: %r" % (f,)
+        continue
+    ext = url[url.rindex('.'):]
+    d = os.path.dirname(f)
+    coverpath = os.path.join(d, "cover" + ext)
+    if download(url, coverpath):
+        print "D: %r %r" % (f, coverpath)
+        _covers[d] = coverpath
+    else:
+        print "F: %r" % (f,)

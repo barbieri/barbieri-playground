@@ -1,0 +1,133 @@
+<?xml version="1.0" standalone="no"?> <!--*- mode: xml -*-->
+<!DOCTYPE glade-interface SYSTEM "http://gazpacho.sicem.biz/gazpacho-0.1.dtd">
+<glade-interface>
+    <widget class="GtkUIManager" id="uimanager">
+        <child>
+            <widget class="GtkActionGroup" id="DefaultActions">
+                <child>
+                    <widget class="GtkAction" id="EditMenu">
+                        <property name="name">EditMenu</property>
+                        <property name="label" translatable="yes">_Edit</property>
+                    </widget>
+                </child>
+                <child>
+                    <widget class="GtkAction" id="FileMenu">
+                        <property name="name">FileMenu</property>
+                        <property name="label" translatable="yes">_File</property>
+                    </widget>
+                </child>
+                <child>
+                    <widget class="GtkAction" id="quit">
+                        <property name="name">quit</property>
+                        <property name="tooltip" translatable="yes">Quit the program</property>
+                        <property name="stock_id">gtk-quit</property>
+                    </widget>
+                </child>
+            </widget>
+        </child>
+        <child>
+            <widget class="GtkActionGroup" id="main_actions">
+                <child>
+                    <widget class="GtkAction" id="add">
+                        <property name="name">add</property>
+                        <property name="label" translatable="yes">Add</property>
+                        <property name="tooltip" translatable="yes">Add new entry</property>
+                        <property name="stock_id">gtk-add</property>
+                    </widget>
+                </child>
+                <child>
+                    <widget class="GtkAction" id="edit">
+                        <property name="name">edit</property>
+                        <property name="label" translatable="yes">Edit</property>
+                        <property name="tooltip" translatable="yes">Edit entry</property>
+                        <property name="stock_id">gtk-edit</property>
+                    </widget>
+                </child>
+                <child>
+                    <widget class="GtkAction" id="remove">
+                        <property name="name">remove</property>
+                        <property name="label" translatable="yes">Remove</property>
+                        <property name="tooltip" translatable="yes">Remove entry</property>
+                        <property name="stock_id">gtk-remove</property>
+                    </widget>
+                </child>
+            </widget>
+        </child>
+        <ui id="initial-state"><![CDATA[<ui>
+<menubar action="menubar" name="menubar">
+  <menu action="FileMenu" name="FileMenu">
+    
+    
+    
+    
+    
+    <menuitem action="quit" name="quit"/>
+  </menu>
+  <menu action="EditMenu" name="EditMenu">
+    
+    
+    
+  <menuitem action="add" name="add"/><menuitem action="edit" name="edit"/><menuitem action="remove" name="remove"/></menu>
+</menubar><toolbar action="toolbar" name="toolbar">
+  
+  
+  
+  
+  
+  
+  
+<toolitem action="add" name="add"/><toolitem action="edit" name="edit"/><toolitem action="remove" name="remove"/><separator name="sep"/><toolitem action="quit" name="quit"/></toolbar>
+</ui>]]></ui>
+    </widget>
+    <widget class="GtkWindow" id="shell">
+        <property name="default_height">250</property>
+        <property name="default_width">440</property>
+        <child>
+            <widget class="GtkVBox" id="vbox1">
+                <property name="visible">True</property>
+                <child>
+                    <widget constructor="initial-state" class="GtkMenuBar" id="menubar">
+                        <property name="visible">True</property>
+                    </widget>
+                    <packing>
+                        <property name="expand">False</property>
+                    </packing>
+                </child>
+                <child>
+                    <widget class="GtkHandleBox" id="handlebox">
+                        <property name="visible">True</property>
+                        <child>
+                            <widget constructor="initial-state" class="GtkToolbar" id="toolbar">
+                                <property name="visible">True</property>
+                            </widget>
+                        </child>
+                    </widget>
+                    <packing>
+                        <property name="expand">False</property>
+                        <property name="position">1</property>
+                    </packing>
+                </child>
+                <child>
+                    <widget class="GtkEventBox" id="list_placeholder">
+                        <property name="visible">True</property>
+                        <child>
+                            <placeholder/>
+                        </child>
+                    </widget>
+                    <packing>
+                        <property name="position">2</property>
+                    </packing>
+                </child>
+                <child>
+                    <widget class="GtkStatusbar" id="statusbar">
+                        <property name="visible">True</property>
+                    </widget>
+                    <packing>
+                        <property name="expand">False</property>
+                        <property name="position">3</property>
+                    </packing>
+                </child>
+            </widget>
+        </child>
+    </widget>
+</glade-interface>

@@ -1,0 +1,35 @@
+                         CATOTA MEDIA PLAYER
+                         ===================
+
+Catota  is the  brazilian  slang  for "snot"  (Mucus  secreted in,  or
+discharged from, the nose. -- Webster).
+
+Catota is  an experience with multimedia and  Maemo devices, specially
+N800. It's  a dirty hack, hence  the name, to allow  trying new player
+engines  and  data  sources,  yet providing  a  beautiful/useful  user
+interface.
+
+It provides  both client and server,  where server is just  a TCP HTTP
+server with built in media transcoders,  meant to be run on desktop or
+servers and  client is  a Python/GTK UI  with some player  engine like
+MPlayer and dialogs to interact with data sources.
+
+
+DEPENDENCIES
+~~~~~~~~~~~~
+
+Common dependencies:
+
+ * Python >= 2.4
+
+
+Client dependencies:
+
+ * hildon python bindings for maemo >= 3.0
+ * pygtk >= 2.6
+ * mplayer
+
+
+Server dependencies:
+
+ * mencoder

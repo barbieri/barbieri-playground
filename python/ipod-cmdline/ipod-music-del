@@ -1,0 +1,116 @@
+#!/usr/bin/env python
+
+# Based on libgpod examples.
+
+import os.path
+import sys
+import gpod
+from optparse import OptionParser
+
+parser = OptionParser(usage="usage: %prog [options]",
+                      description="Delete music and playlist from your ipod.",
+                      epilog="Files are read from stdin, one per line.")
+parser.add_option("-m", "--mountpoint", dest="mountpoint",
+                  default="/mnt/ipod",
+                  help="use iPod at MOUNTPOINT", metavar="MOUNTPOINT")
+parser.add_option("-l", "--playlist", dest="playlist",
+                  help="delete PLAYLIST (but not its track)",
+                  metavar="PLAYLIST")
+parser.add_option("-M", "--missing", dest="missing",
+                  help="list only missing locally (your PC)",
+                  action="store_true", default=False)
+parser.add_option("-A", "--all-tracks", dest="all_tracks",
+                  help="delete all tracks from iPod",
+                  action="store_true", default=False)
+
+(options, args) = parser.parse_args()
+
+db = gpod.Database(options.mountpoint)
+
+if options.playlist:
+    try:
+        chosen_playlist = int(options.playlist)
+    except ValueError:
+        chosen_playlist = options.playlist
+
+    playlist = None
+    for pl in db.Playlists:
+        if pl.name == chosen_playlist:
+            playlist = pl
+    if not playlist:
+        raise ValueError("playlist %r not found." % (chosen_playlist,))
+    else:
+        db.remove(playlist)
+
+if options.all_tracks:
+    for track in db:
+        if track["mediatype"] != gpod.ITDB_MEDIATYPE_AUDIO:
+            continue
+
+        try:
+            f = track["userdata"]["filename_utf8"]
+        except KeyError:
+            f = None
+
+        print ("T: "
+               "%r %r %r %r "
+               "%d %d %r") % (
+            f, track["artist"], track["album"], track["genre"],
+            track["tracklen"], track["track_nr"], track["title"])
+        db.remove(track)
+
+elif options.missing:
+    for track in db:
+        if track["mediatype"] != gpod.ITDB_MEDIATYPE_AUDIO:
+            continue
+
+        try:
+            f = track["userdata"]["filename_utf8"]
+        except KeyError:
+            continue
+
+        try:
+            i = track["userdata"]["filename_ipod"]
+        except KeyError:
+            continue
+
+        ipf = options.mountpoint + i.replace(':', os.path.sep)
+        if os.path.isfile(f) and os.path.isfile(ipf):
+            continue
+
+        print ("T: "
+               "%r %r %r %r "
+               "%d %d %r") % (
+            f, track["artist"], track["album"], track["genre"],
+            track["tracklen"], track["track_nr"], track["title"])
+        db.remove(track)
+
+else:
+    _filenames = set()
+    for f in sys.stdin.readlines():
+        if f[-1] == '\n':
+            f = f[:-1]
+        f = os.path.realpath(f)
+        if os.path.isfile(f):
+            _filenames.add(f)
+
+    for track in db:
+        if track["mediatype"] != gpod.ITDB_MEDIATYPE_AUDIO:
+            continue
+
+        try:
+            f = track["userdata"]["filename_utf8"]
+        except KeyError:
+            f = None
+
+        if f not in _filenames:
+            continue
+
+        print ("T: "
+               "%r %r %r %r "
+               "%d %d %r") % (
+            f, track["artist"], track["album"], track["genre"],
+            track["tracklen"], track["track_nr"], track["title"])
+        db.remove(track)
+
+db.close()

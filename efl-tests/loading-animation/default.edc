@@ -1,0 +1,119 @@
+images {
+   image: "background.png" LOSSY 95;
+   image: "loading_1.png" LOSSY 95;
+   image: "loading_2.png" LOSSY 95;
+   image: "loading_3.png" LOSSY 95;
+   image: "loading_4.png" LOSSY 95;
+   image: "loading_5.png" LOSSY 95;
+   image: "loading_6.png" LOSSY 95;
+   image: "loading_7.png" LOSSY 95;
+   image: "loading_8.png" LOSSY 95;
+}
+
+collections {
+   group {
+      name: "main";
+
+      parts {
+         part {
+            name: "base";
+            mouse_events: 1;
+            description {
+               state: "default" 0.0;
+               rel1 {
+                  relative: 0.0 0.0;
+                  offset: 0 0;
+               }
+               rel2 {
+                  relative: 1.0 1.0;
+                  offset: 0 0;
+               }
+               image {
+                  normal: "background.png";
+               }
+            }
+         }
+
+         part {
+            name: "loading";
+            mouse_events: 0;
+
+            description {
+               state: "default" 0.0;
+               max: 40 40;
+               color: 255 255 255 255;
+               align: 0.5 0;
+
+               rel1 {
+                  relative: 0.0 0.95;
+                  offset: 0 -40;
+               }
+               rel2 {
+                  relative: 1.0 0.95;
+                  offset: 0 0;
+               }
+
+               image {
+                  normal: "loading_1.png";
+                  tween: "loading_2.png";
+                  tween: "loading_3.png";
+                  tween: "loading_4.png";
+                  tween: "loading_5.png";
+                  tween: "loading_6.png";
+                  tween: "loading_7.png";
+                  tween: "loading_8.png";
+                }
+            }
+
+            description {
+               state: "hidden" 0.0;
+               inherit: "default" 0.0;
+               color: 255 255 255 0;
+            }
+         }
+      } // end parts
+
+      programs {
+         program {
+            name: "initial_loading_state";
+            signal: "show";
+            action: STATE_SET "hidden" 0.0;
+            target: "loading";
+         }
+
+         program {
+            name: "start_animate_loading";
+            action: STATE_SET "default" 0.0;
+            target: "loading";
+            after: "loop_animate_loading";
+
+            source: "*";
+            signal: "mouse,down,1";
+         }
+
+         program {
+            name: "loop_animate_loading";
+            action: STATE_SET "default" 0.0;
+            transition: LINEAR 1.0;
+            target: "loading";
+            after: "loop_animate_loading";
+         }
+
+         program {
+            name: "stop_animate_loading";
+            action: ACTION_STOP;
+            target: "loop_animate_loading";
+            after: "hide_loading";
+
+            source: "*";
+            signal: "mouse,up,1";
+        }
+
+        program {
+            name: "hide_loading";
+            action: STATE_SET "hidden" 0.0;
+            target: "loading";
+        }
+      } // end programs
+   } // end group "main"
+}

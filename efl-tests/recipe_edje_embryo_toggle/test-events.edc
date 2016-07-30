@@ -1,0 +1,56 @@
+collections {
+   group {
+      name: "test";
+
+      parts {
+        part {
+                name:   "button";
+                type:   RECT;
+                mouse_events, 1;
+
+                description {
+                        state, "default" 0.0;
+                        min, 100 50;
+                        max, 100 50;
+                        align, 0.5 0.5;
+
+                        color: 255 0 0 255;
+
+                        rel1 {
+                                relative, 0.0 0.0;
+                                offset, 0 0;
+                        }
+                        rel2 {
+                                relative, 1.0 1.0;
+                                offset, -1 -1;
+                        }
+                }
+                description {
+                        state, "clicked" 0.0;
+                        min, 100 50;
+                        max, 100 50;
+                        align, 0.5 0.5;
+
+                        color, 170 89 214 255;
+
+                        rel1 {
+                                relative, 0.0 0.0;
+                                offset, 0 0;
+                        }
+                        rel2 {
+                                relative, 1.0 1.0;
+                                offset, -1 -1;
+                        }
+                }
+        }
+      }
+      programs {
+        program {
+                name: "button_click";
+                signal: "mouse,down,1";
+                source: "button";
+                action, STATE_SET "clicked" 0.0;
+                target: "button";
+        }
+      }
+}

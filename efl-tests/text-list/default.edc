@@ -1,0 +1,525 @@
+fonts {
+   font: "font_item.ttf" "Sans";
+   font: "font_title.ttf" "SansBold";
+}
+
+images {
+   image: "background.png" LOSSY 95;
+   image: "selection.png" LOSSY 95;
+   image: "icon_choose_ok.png" LOSSY 95;
+   image: "icon_choose_back.png" LOSSY 95;
+   image: "CnlAudioContainer.png" LOSSY 95;
+   image: "arrow_up.png" LOSSY 95;
+   image: "arrow_down.png" LOSSY 95;
+   image: "icon_bg.png" COMP;
+   image: "icon_glass.png" COMP;
+   image: "icon_mask.png" COMP;
+}
+
+collections {
+   group {
+      name: "main";
+
+      parts {
+         part {
+            name: "base";
+            mouse_events: 0;
+            description {
+               state: "default" 0.0;
+               rel1 {
+                  relative: 0.0 0.0;
+                  offset: 0 0;
+               }
+               rel2 {
+                  relative: 1.0 1.0;
+                  offset: 0 0;
+               }
+                image {
+                  normal: "background.png";
+                  border: 100 100 60 100;
+               }
+            }
+         }
+
+         part {
+            name: "title";
+            type: TEXT;
+            effect: SOFT_SHADOW;
+            mouse_events: 0;
+            description {
+               state: "default" 0.0;
+               align: 0.5 0.0;
+               color: 255 255 255 255;
+               color2: 0 0 0 255;
+               text {
+                  font: "SansBold";
+                  size: 60;
+                  text: "All";
+                  min: 1 1;
+               }
+               rel1 {
+                  relative: 0.15 0.00;
+               }
+               rel2 {
+                  relative: 0.85 0.00;
+                  offset: 0 50;
+               }
+            }
+         }
+
+         part {
+            name: "contents_clip";
+            type: RECT;
+            mouse_events: 0;
+            description {
+               state: "default" 0.0;
+               color: 255 255 255 255;
+               align: 0 0.5;
+               rel1 {
+                  relative: 0 0;
+                  offset: 160 90;
+               }
+               rel2 {
+                  relative: 1 1;
+                  offset: -141 -51;
+               }
+            }
+         }
+
+         part {
+            name: "contents_swallow";
+            type: SWALLOW;
+            clip_to: "contents_clip";
+            description {
+               state: "default" 0.0;
+               color: 255 255 255 255;
+               align: 0 0.5;
+               rel1 {
+                  to: "contents_clip";
+                  relative: 0 0;
+               }
+               rel2 {
+                  to: "contents_clip";
+                  relative: 1 1;
+               }
+            }
+         }
+
+         part {
+            name: "selection_indicator";
+            mouse_events: 0;
+            description {
+               state: "default" 0.0;
+               min: 100 82;
+               max: 9999 82;
+               image {
+                  normal: "selection.png";
+                  border: 50 50 0 0;
+               }
+               rel1 {
+                  relative: 0 0;
+                  offset: 70 138;
+               }
+               rel2 {
+                  relative: 1 0;
+                  offset: -81 220;
+               }
+            }
+         }
+
+         part {
+            name: "icon";
+            description {
+               state: "default" 0.0;
+               max: 128 128;
+               image {
+                  normal: "CnlAudioContainer.png";
+               }
+               rel1 {
+                  relative: 0 0;
+                  offset: 20 110;
+               }
+               rel2 {
+                  relative: 0 0;
+                  offset: 148 238;
+               }
+            }
+         }
+
+         part {
+            name: "arrow_up_area";
+            type: RECT;
+            description {
+               state: "default" 0.0;
+               max: 110 110;
+               color: 0 0 0 0;
+               rel1 {
+                  relative: 1 0;
+                  offset: -100 0;
+               }
+               rel2 {
+                  relative: 1 0;
+                  offset: 0 110;
+               }
+            }
+         }
+
+         part {
+            name: "arrow_down_area";
+            type: RECT;
+            description {
+               state: "default" 0.0;
+               max: 110 110;
+               color: 0 0 0 0;
+               rel1 {
+                  relative: 1 1;
+                  offset: -100 -200;
+               }
+               rel2 {
+                  relative: 1 1;
+                  offset: 0 -90;
+               }
+            }
+         }
+
+         part {
+            name: "arrow_up";
+            mouse_events: 0;
+            description {
+               state: "default" 0.0;
+               max: 30 30;
+               color: 255 255 255 255;
+               image {
+                  normal: "arrow_up.png";
+               }
+               rel1 {
+                  relative: 1 0;
+                  offset: -60 40;
+               }
+               rel2 {
+                  relative: 1 0;
+                  offset: -30 70;
+               }
+            }
+         }
+
+         part {
+            name: "arrow_down";
+            mouse_events: 0;
+            description {
+               state: "default" 0.0;
+               max: 30 30;
+               color: 255 255 255 255;
+               image {
+                  normal: "arrow_down.png";
+               }
+               rel1 {
+                  relative: 1 1;
+                  offset: -60 -160;
+               }
+               rel2 {
+                  relative: 1 1;
+                  offset: -30 -130;
+               }
+            }
+         }
+
+         part {
+            name: "back_button";
+            description {
+               state: "default" 0.0;
+               max: 48 48;
+               image {
+                  normal: "icon_choose_back.png";
+               }
+               rel1 {
+                  relative: 0 1;
+                  offset: 20 -68;
+               }
+               rel2 {
+                  relative: 0 1;
+                  offset: 68 -20;
+               }
+            }
+         }
+
+         part {
+            name: "ok_button";
+            description {
+               state: "default" 0.0;
+               max: 48 48;
+               image {
+                  normal: "icon_choose_ok.png";
+               }
+               rel1 {
+                  relative: 1 1;
+                  offset: -68 -68;
+               }
+               rel2 {
+                  relative: 1 1;
+                  offset: -20 -20;
+               }
+            }
+         }
+      }
+   }
+
+   group {
+      name: "list_item";
+      min: 20 56;
+
+      parts {
+         part {
+            name: "base";
+            type: RECT;
+            description {
+               state: "default" 0.0;
+               min: 0 56;
+               max: 99999 56;
+               color: 255 0 0 0;
+               rel1 {
+                  relative: 0 0;
+               }
+               rel2 {
+                  relative: 1 1;
+                }
+            }
+         }
+
+
+         part {
+            name: "label";
+            type: TEXT;
+//            effect: SOFT_SHADOW;
+            effect: SHADOW;
+            description {
+               state: "default" 0.0;
+               align: 0 0.5;
+               color: 255 255 255 255;
+               color3: 0 0 0 128;
+               text {
+                  font: "Sans";
+                  size: 35;
+                  text: "List item";
+                  align: 0 0.5;
+               }
+               rel1 {
+                  to: "base";
+                  relative: 0.0 0.0;
+                }
+               rel2 {
+                  to: "base";
+                  relative: 1.0 1.0;
+               }
+            }
+         }
+         part {
+              name: "mouse_zone";
+              type: "RECT";
+              description {
+                 state : "normal" 0.0;
+                 color : 255 255 255 0;
+              }
+         }
+      }
+   }
+
+
+   group {
+      name: "icon_edje";
+      min: 200 220;
+
+      parts{
+         part {
+            name: "bg";
+            type: IMAGE;
+
+            description {
+               state: "default" 0.0;
+               color: 255 255 255 255;
+               rel1 {
+                  relative: 0 0;
+               }
+               rel2 {
+                  relative: 1 1;
+                  offset: -1 -1;
+               }
+               image {
+                  normal: "icon_bg.png";
+                  border: 8 10 8 10;
+               }
+            }
+            description {
+               state: "selected" 0.0;
+               color: 230 210 100 255;
+               rel1 {
+                  relative: 0 0;
+               }
+               rel2 {
+                  relative: 1 1;
+                  offset: -1 -1;
+               }
+               image {
+                  normal: "icon_bg.png";
+                  border: 8 10 8 10;
+               }
+            }
+         }
+
+         part {
+            name: "image";
+            type: SWALLOW;
+            mouse_events: 0;
+
+            description {
+               state: "default" 0.0;
+               color: 255 255 255 255;
+               align: 0.5 0.5;
+               min: 32 32;
+               rel1 {
+                  relative: 0.0 0.0;
+                  offset: 10 12;
+               }
+               rel2 {
+                  relative: 1.0 1.0;
+                  offset: -11 -43;
+               }
+            }
+         }
+
+         part {
+            name: "mask";
+            type: IMAGE;
+            mouse_events: 0;
+
+            description {
+               state: "default" 0.0;
+               color: 255 255 255 255;
+               rel1 {
+                  to: "image";
+                  relative: 0 0;
+               }
+               rel2 {
+                  to: "image";
+                  relative: 1 1;
+                  offset: -1 -1;
+               }
+               image {
+                  normal: "icon_mask.png";
+                  border: 4 4 4 4;
+                  middle: 0;
+               }
+            }
+            description {
+               state: "selected" 0.0;
+               color: 230 210 100 255;
+               rel1 {
+                  to: "image";
+                  relative: 0 0;
+               }
+               rel2 {
+                  to: "image";
+                  relative: 1 1;
+                  offset: -1 -1;
+               }
+               image {
+                  normal: "icon_mask.png";
+                  border: 4 4 4 4;
+                  middle: 0;
+               }
+            }
+         }
+
+         part {
+            name: "glass";
+            type: IMAGE;
+            mouse_events: 0;
+
+            description {
+               state: "default" 0.0;
+               color: 255 255 255 255;
+               rel1 {
+                  to: "image";
+                  relative: 0 0;
+               }
+               rel2 {
+                  to: "image";
+                  relative: 1 1;
+                  offset: -1 -1;
+               }
+               image {
+                  normal: "icon_glass.png";
+                  border: 8 8 8 8;
+               }
+            }
+         }
+
+         part {
+            name: "label_clip";
+            type: RECT;
+            mouse_events: 0;
+            description {
+               state: "default" 0.0;
+               color: 255 255 255 255;
+               rel1 {
+                  relative: 0.0 1.0;
+                  offset: 10 -33;
+               }
+               rel2 {
+                  relative: 1.0 1.0;
+                  offset: -11 -13;
+               }
+            }
+         }
+
+         part {
+            name: "label";
+            type: TEXT;
+            effect: SOFT_SHADOW;
+            clip_to: "label_clip";
+            mouse_events: 0;
+            description {
+               state: "default" 0.0;
+               align: 0.0 1.0;
+               color: 255 255 255 255;
+               color2: 0 0 0 255;
+               text {
+                  font: "Sans";
+                  size: 10;
+                  text: "label";
+                  min: 0 1;
+                  align: 0.5 0.5;
+                  elipsis: 1.0;
+               }
+               rel1 {
+                  relative: 0.0 1.0;
+                  offset: 10 -33;
+               }
+               rel2 {
+                  relative: 1.0 1.0;
+                  offset: -11 -13;
+               }
+            }
+         }
+      }
+      programs {
+         program {
+            name: "select_bg";
+            signal: "mouse,in";
+            source: "bg";
+            action: STATE_SET "selected" 0.0;
+            target: "bg";
+            target: "mask";
+         }
+         program {
+            name: "normal_bg";
+            signal: "mouse,out";
+            source: "bg";
+            action: STATE_SET "default" 0.0;
+            transition: LINEAR 0.7;
+            target: "bg";
+            target: "mask";
+         }
+      }
+   }
+}
