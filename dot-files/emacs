@@ -7,7 +7,11 @@
  ;; If there is more than one, they won't work right.
  '(auto-compression-mode t nil (jka-compr))
  '(blink-cursor-mode nil)
- '(c-default-style (quote ((c-mode . "cc-mode") (java-mode . "java") (other . "gnu"))))
+ '(c-default-style
+   (quote
+    ((c-mode . "cc-mode")
+     (java-mode . "java")
+     (other . "gnu"))))
  '(case-fold-search t)
  '(column-number-mode t)
  '(cscope-database-file "/home/gustavo/Development/cscope.out")
@@ -20,17 +24,28 @@
  '(ispell-program-name "aspell")
  '(iswitchb-mode t)
  '(menu-bar-mode nil)
- '(mmm-global-mode (quote maybe) nil (mmm-mode))
  '(mouse-wheel-mode t nil (mwheel))
  '(require-final-newline t)
- '(safe-local-variable-values (quote ((encoding . utf-8) (mmm-classes . edje-lua) (todo-categories "Personal") (todo-categories "Personal"))))
+ '(safe-local-variable-values
+   (quote
+    ((encoding . utf-8)
+     (todo-categories "Personal")
+     (todo-categories "Personal"))))
  '(save-place t nil (saveplace))
  '(scroll-bar-mode nil)
  '(semanticdb-default-system-save-directory "/home/gustavo/.semantic.db" t)
  '(show-paren-mode t nil (paren))
  '(show-trailing-whitespace t)
  '(sort-fold-case t t)
- '(speedbar-frame-parameters (quote ((minibuffer) (width . 20) (border-width . 0) (menu-bar-lines . 0) (tool-bar-lines . 0) (unsplittable . t) (set-background-color "black"))))
+ '(speedbar-frame-parameters
+   (quote
+    ((minibuffer)
+     (width . 20)
+     (border-width . 0)
+     (menu-bar-lines . 0)
+     (tool-bar-lines . 0)
+     (unsplittable . t)
+     (set-background-color "black"))))
  '(tab-width 8)
  '(tool-bar-mode nil nil (tool-bar))
  '(transient-mark-mode t)
@@ -42,7 +57,7 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(default ((t (:inherit nil :stipple nil :background "#303030" :foreground "#d9d9d9" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 90 :width normal :foundry "xos4" :family "terminus"))))
+ '(default ((t (:inherit nil :stipple nil :background "#303030" :foreground "#d9d9d9" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 110 :width normal :foundry "xos4" :family "Terminus"))))
  '(background "blue")
  '(diff-added ((t (:inherit diff-changed-face :foreground "#00ff00"))))
  '(diff-added-face ((t (:inherit diff-changed-face :foreground "#00ff00"))) t)
@@ -62,7 +77,6 @@
  '(highlight ((t (:background "CornflowerBlue"))))
  '(list-mode-item-selected ((t (:background "gold"))))
  '(makefile-space-face ((t (:background "wheat"))) t)
- '(mmm-default-submode-face ((t (:background "gray15"))))
  '(mode-line ((t (:background "gray10" :foreground "#e9e9b0"))))
  '(mode-line-inactive ((t (:inherit mode-line :foreground "#666666" :box (:line-width -1 :color "grey30") :weight light))))
  '(paren-match ((t (:background "cyan"))))
@@ -190,7 +204,9 @@
 (defun evas-c-mode-hooks ()
   (let ((path (buffer-file-name)))
     (cond
-     ((string-match "/svn/e" path) (c-set-style "e17")
+     ((string-match "\\.eot?$" path) (c-set-style "linux4")
+                                   (whitespace-toggle-verbose))
+     ((string-match "/Development/git/efl" path) (c-set-style "e17")
                                    (whitespace-toggle-verbose))
      )
     )
@@ -280,61 +296,6 @@
   )
 (add-hook 'autoconf-mode-hook 'my-autoconf-mode-common-hook)
 
-(defun obsidian-c-mode-hooks ()
-  (let ((path (buffer-file-name)))
-    (cond
-    (cond ((or (string-match "/obsidian-playground/" file)
-               (string-match "/obsidian-homescreen/" file))
-               (c-set-style "linux4"))
-          )
-     )
-    )
-  )
-(add-hook 'c-mode-common-hook 'obsidian-c-mode-hooks)
-
-
-;; webkit has no tab in changelog
-;; (defun my-change-log-mode-common-hook ()
-;;   ;; highlight tabs
-;;   (font-lock-add-keywords nil my-extra-keywords)
-;;   ;; other customizations
-;;   (setq tab-width 8
-;;         ;; this will make sure spaces are used instead of tabs
-;;         indent-tabs-mode nil)
-;;   )
-;; (add-hook 'change-log-mode-hook 'my-change-log-mode-common-hook)
-
-(defun* get-closest-pathname (&optional (max-level 3) (file "Makefile"))
-  (let ((root (expand-file-name "/"))
-        (level 0))
-    (expand-file-name file
-                      (loop
-                       for d = default-directory then (expand-file-name ".." d)
-                       do (setq level (+ level 1))
-                       if (file-exists-p (expand-file-name file d))
-                       return d
-                       if (> level max-level)
-                       return nil
-                       if (equal d root)
-                       return nil))))
-
-
-(add-hook 'c-mode-hook
-          (lambda ()
-            (unless (file-exists-p "Makefile")
-              (set (make-local-variable 'compile-command)
-                   (let ((file (file-name-nondirectory buffer-file-name))
-                         (mkfile (get-closest-pathname)))
-                     (if mkfile
-                         (progn (format "make -C %s -f %s"
-                                        (file-name-directory mkfile) mkfile))
-                       (format "%s -c -o %s.o %s %s %s"
-                               (or (getenv "CC") "gcc")
-                               (file-name-sans-extension file)
-                               (or (getenv "CPPFLAGS") "-DDEBUG=9")
-                               (or (getenv "CFLAGS") "-Wall -Wextra -Wshadow -ggdb3 -fvisibility=hidden")
-                               (or (getenv "CXXFLAGS") "-Wall -Wextra -Wshadow -ggdb3 -fvisibility=hidden")
-                               file)))))))
 
 (put 'downcase-region 'disabled nil)
 
@@ -348,16 +309,12 @@
 (add-to-list 'auto-mode-alist '("\\.edc$" . edje-mode))
 (autoload 'edje-mode "edje-mode")
 
+(add-to-list 'load-path "/home/gustavo/.emacs.d/site-packages/eo-mode.el")
+(add-to-list 'auto-mode-alist '("\\.eo$\\|\\.eot$" . eo-mode))
+(autoload 'eo-mode "eo-mode")
+
 (put 'upcase-region 'disabled nil)
 
-;;(require 'xcscope)
-;;(require 'taskjuggler-mode)
-
 (add-to-list 'auto-mode-alist '("\\.org\\'" . org-mode))
-
-(require 'session)
-(add-hook 'after-init-hook 'session-initialize)
-
-;; (require 'pastebin)
 
 (server-start)
