@@ -1,0 +1,181 @@
+/*
+ * Copyright (C) 2016 Gustavo Sverzut Barbieri
+ *
+ * This library is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU Lesser General Public
+ * License as published by the Free Software Foundation; either
+ * version 2.1 of the License, or (at your option) any later version.
+ *
+ * This library is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * Lesser General Public License for more details.
+ *
+ * You should have received a copy of the GNU Lesser General Public
+ * License along with this library;
+ * if not, see <http://www.gnu.org/licenses/>.
+ */
+#include <openssl/evp.h>
+
+static inline void _cws_debug(const char *prefix, const void *buffer, size_t len)
+{
+    const uint8_t *bytes = buffer;
+    size_t i;
+    if (prefix)
+        fprintf(stderr, "%s:", prefix);
+    for (i = 0; i < len; i++) {
+        uint8_t b = bytes[i];
+        if (isprint(b))
+            fprintf(stderr, " %#04x(%c)", b, b);
+        else
+            fprintf(stderr, " %#04x", b);
+    }
+    if (prefix)
+        fprintf(stderr, "\n");
+}
+
+static void _cws_sha1(const void *input, const size_t input_len, void *output) {
+    static const EVP_MD *md = NULL;
+    EVP_MD_CTX ctx;
+
+    if (!md) {
+        OpenSSL_add_all_digests();
+        md = EVP_get_digestbyname("sha1");
+    }
+
+    EVP_MD_CTX_init(&ctx);
+    EVP_DigestInit_ex(&ctx, md, NULL);
+
+    EVP_DigestUpdate(&ctx, input, input_len);
+    EVP_DigestFinal_ex(&ctx, output, NULL);
+
+    EVP_MD_CTX_cleanup(&ctx);
+}
+
+static void _cws_encode_base64(const uint8_t *input, const size_t input_len, char *output)
+{
+    static const char base64_map[65] = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=";
+    size_t i, o;
+    uint8_t c;
+
+    for (i = 0, o = 0; i + 3 <= input_len; i += 3) {
+        c = (input[i] & (((1 << 6) - 1) << 2)) >> 2;
+        output[o++] = base64_map[c];
+
+        c = (input[i] & ((1 << 2) - 1)) << 4;
+        c |= (input[i + 1] & (((1 << 4) - 1) << 4)) >> 4;
+        output[o++] = base64_map[c];
+
+        c = (input[i + 1] & ((1 << 4) - 1)) << 2;
+        c |= (input[i + 2] & (((1 << 2) - 1) << 6)) >> 6;
+        output[o++] = base64_map[c];
+
+        c = input[i + 2] & ((1 << 6) - 1);
+        output[o++] = base64_map[c];
+    }
+
+    if (i + 1 == input_len) {
+        c = (input[i] & (((1 << 6) - 1) << 2)) >> 2;
+        output[o++] = base64_map[c];
+
+        c = (input[i] & ((1 << 2) - 1)) << 4;
+        output[o++] = base64_map[c];
+
+        output[o++] = base64_map[64];
+        output[o++] = base64_map[64];
+    } else if (i + 2 == input_len) {
+        c = (input[i] & (((1 << 6) - 1) << 2)) >> 2;
+        output[o++] = base64_map[c];
+
+        c = (input[i] & ((1 << 2) - 1)) << 4;
+        c |= (input[i + 1] & (((1 << 4) - 1) << 4)) >> 4;
+        output[o++] = base64_map[c];
+
+        c = (input[i + 1] & ((1 << 4) - 1)) << 2;
+        output[o++] = base64_map[c];
+
+        output[o++] = base64_map[64];
+    }
+}
+
+static void _cws_get_random(void *buffer, size_t len)
+{
+    uint8_t *bytes = buffer;
+    uint8_t *bytes_end = bytes + len;
+    int fd = open("/dev/random", O_RDONLY);
+    if (fd >= 0) {
+        do {
+            ssize_t r = read(fd, bytes, bytes_end - bytes);
+            if (r < 0) {
+                close(fd);
+                goto fallback;
+            }
+            bytes += r;
+        } while (bytes < bytes_end);
+        close(fd);
+    } else {
+      fallback:
+        for (; bytes < bytes_end; bytes++)
+            *bytes = random() & 0xff;
+    }
+}
+
+static inline void _cws_trim(const char **p_buffer, size_t *p_len)
+{
+    const char *buffer = *p_buffer;
+    size_t len = *p_len;
+
+    while (len > 0 && isspace(buffer[0])) {
+        buffer++;
+        len--;
+    }
+
+    while (len > 0 && isspace(buffer[len - 1]))
+        len--;
+
+    *p_buffer = buffer;
+    *p_len = len;
+}
+
+static inline bool _cws_header_has_prefix(const char *buffer, const size_t buflen, const char *prefix) {
+    const size_t prefixlen = strlen(prefix);
+    if (buflen < prefixlen)
+        return false;
+    return strncasecmp(buffer, prefix, prefixlen) == 0;
+}
+
+static inline void _cws_hton(void *mem, uint8_t len)
+{
+#if __BYTE_ORDER__ != __ORDER_BIG_ENDIAN__
+    uint8_t *bytes;
+    uint8_t i, mid;
+
+    if (len % 2) return;
+
+    mid = len / 2;
+    bytes = mem;
+    for (i = 0; i < mid; i++) {
+        uint8_t tmp = bytes[i];
+        bytes[i] = bytes[len - i - 1];
+        bytes[len - i - 1] = tmp;
+    }
+#endif
+}
+
+static inline void _cws_ntoh(void *mem, uint8_t len)
+{
+#if __BYTE_ORDER__ != __ORDER_BIG_ENDIAN__
+    uint8_t *bytes;
+    uint8_t i, mid;
+
+    if (len % 2) return;
+
+    mid = len / 2;
+    bytes = mem;
+    for (i = 0; i < mid; i++) {
+        uint8_t tmp = bytes[i];
+        bytes[i] = bytes[len - i - 1];
+        bytes[len - i - 1] = tmp;
+    }
+#endif
+}
