@@ -35,6 +35,8 @@ enum cws_close_reason {
     CWS_CLOSE_REASON_GOING_AWAY = 1001,
     CWS_CLOSE_REASON_PROTOCOL_ERROR = 1002,
     CWS_CLOSE_REASON_UNEXPECTED_DATA = 1003,
+    CWS_CLOSE_REASON_NO_REASON = 1005,
+    CWS_CLOSE_REASON_ABRUPTLY = 1006,
     CWS_CLOSE_REASON_INCONSISTENT_DATA = 1007,
     CWS_CLOSE_REASON_POLICY_VIOLATION = 1008,
     CWS_CLOSE_REASON_TOO_BIG = 1009,
@@ -72,18 +74,18 @@ struct cws_callbacks {
      * @note if provided you should reply with cws_pong(). If not
      * provided, pong is sent with the same message payload.
      */
-    void (*on_ping)(void *data, CURL *easy, const char *reason);
+    void (*on_ping)(void *data, CURL *easy, const char *reason, size_t len);
     /**
      * reports PONG.
      */
-    void (*on_pong)(void *data, CURL *easy, const char *reason);
+    void (*on_pong)(void *data, CURL *easy, const char *reason, size_t len);
     /**
      * reports server closed the connection with the given reason.
      *
      * Clients should not transmit any more data after the server is
      * closed, just call cws_free().
      */
-    void (*on_close)(void *data, CURL *easy, enum cws_close_reason reason, const char *reason_text);
+    void (*on_close)(void *data, CURL *easy, enum cws_close_reason reason, const char *reason_text, size_t reason_text_len);
     const void *data;
 };
 
@@ -157,9 +159,11 @@ static inline bool cws_send_text(CURL *easy, const char *string) {
  *
  * @param easy the CURL easy handle created with cws_new()
  * @param reason #NULL or some UTF-8 string null ('\0') terminated.
+ * @param len the length of @a reason in bytes. If #SIZE_MAX, uses
+ *        strlen() on @a reason if it's not #NULL.
  * @return #true if sent, #false on errors.
  */
-bool cws_ping(CURL *easy, const char *reason);
+bool cws_ping(CURL *easy, const char *reason, size_t len);
 
 /**
  * Send a PONG (opcode 0xA) frame with @a reason as payload.
@@ -169,9 +173,11 @@ bool cws_ping(CURL *easy, const char *reason);
  *
  * @param easy the CURL easy handle created with cws_new()
  * @param reason #NULL or some UTF-8 string null ('\0') terminated.
+ * @param len the length of @a reason in bytes. If #SIZE_MAX, uses
+ *        strlen() on @a reason if it's not #NULL.
  * @return #true if sent, #false on errors.
  */
-bool cws_pong(CURL *easy, const char *reason);
+bool cws_pong(CURL *easy, const char *reason, size_t len);
 
 /**
  * Send a CLOSE (opcode 0x8) frame with @a reason as payload.
@@ -179,9 +185,12 @@ bool cws_pong(CURL *easy, const char *reason);
  * @param easy the CURL easy handle created with cws_new()
  * @param reason the reason why it was closed, see the well-known numbers.
  * @param reason_text #NULL or some UTF-8 string null ('\0') terminated.
+ * @param reason_text_len the length of @a reason_text in bytes. If
+ *        #SIZE_MAX, uses strlen() on @a reason_text if it's not
+ *        #NULL.
  * @return #true if sent, #false on errors.
  */
-bool cws_close(CURL *easy, enum cws_close_reason reason, const char *reason_text);
+bool cws_close(CURL *easy, enum cws_close_reason reason, const char *reason_text, size_t reason_text_len);
 
 #ifdef __cplusplus
 }

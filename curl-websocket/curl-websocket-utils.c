@@ -102,7 +102,7 @@ static void _cws_get_random(void *buffer, size_t len)
 {
     uint8_t *bytes = buffer;
     uint8_t *bytes_end = bytes + len;
-    int fd = open("/dev/random", O_RDONLY);
+    int fd = open("/dev/urandom", O_RDONLY);
     if (fd >= 0) {
         do {
             ssize_t r = read(fd, bytes, bytes_end - bytes);

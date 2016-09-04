@@ -15,12 +15,17 @@ LIBS_LDFLAGS := $(LIBCURL_LDFLAGS) $(LIBOPENSSL_LDFLAGS)
 
 .PHONY: all clean
 
-all: curl-websocket
+all: curl-websocket autobahn-testee
 
 curl-websocket: main.c curl-websocket.c curl-websocket-utils.c Makefile
 	$(CC) $(CFLAGS) $(LIBS_CFLAGS) \
 		main.c curl-websocket.c \
 		-o $@ $(LIBS_LDFLAGS)
 
+autobahn-testee: autobahn-testee.c curl-websocket.c curl-websocket-utils.c Makefile
+	$(CC) $(CFLAGS) $(LIBS_CFLAGS) \
+		autobahn-testee.c curl-websocket.c \
+		-o $@ $(LIBS_LDFLAGS)
+
 clean:
-	rm -f curl-websocket
+	rm -f curl-websocket autobahn-testee

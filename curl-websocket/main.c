@@ -167,28 +167,26 @@ static void on_binary(void *data, CURL *easy, const void *mem, size_t len) {
     if (ctx->binary_lines < 5)
         send_dummy(easy, false, ++ctx->binary_lines);
     else
-        cws_ping(easy, "will close on pong");
+        cws_ping(easy, "will close on pong", SIZE_MAX);
+}
+
+static void on_ping(void *data, CURL *easy, const char *reason, size_t len) {
+    fprintf(stderr, "INFO: PING %zd bytes='%s'\n", len, reason);
+    cws_pong(easy, "just pong", SIZE_MAX);
     (void)data;
 }
 
-static void on_ping(void *data, CURL *easy, const char *reason) {
-    fprintf(stderr, "INFO: PING='%s'\n", reason);
-    cws_pong(easy, "just pong");
-    (void)data;
-    (void)easy;
-}
+static void on_pong(void *data, CURL *easy, const char *reason, size_t len) {
+    fprintf(stderr, "INFO: PONG %zd bytes='%s'\n", len, reason);
 
-static void on_pong(void *data, CURL *easy, const char *reason) {
-    fprintf(stderr, "INFO: PONG='%s'\n", reason);
-
-    cws_close(easy, CWS_CLOSE_REASON_NORMAL, "close it!");
+    cws_close(easy, CWS_CLOSE_REASON_NORMAL, "close it!", SIZE_MAX);
     (void)data;
     (void)easy;
 }
 
-static void on_close(void *data, CURL *easy, enum cws_close_reason reason, const char *reason_text) {
+static void on_close(void *data, CURL *easy, enum cws_close_reason reason, const char *reason_text, size_t reason_text_len) {
     struct myapp_ctx *ctx = data;
-    fprintf(stderr, "INFO: CLOSE=%4d '%s'\n", reason, reason_text);
+    fprintf(stderr, "INFO: CLOSE=%4d %zd bytes '%s'\n", reason, reason_text_len, reason_text);
 
     ctx->exitval = (reason == CWS_CLOSE_REASON_NORMAL ?
                     EXIT_SUCCESS : EXIT_FAILURE);

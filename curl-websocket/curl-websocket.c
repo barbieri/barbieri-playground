@@ -31,7 +31,7 @@
 
 #include "curl-websocket-utils.c"
 
-#define ERR(fmt, ...) \
+#define ERR(fmt, ...)                                   \
     fprintf(stderr, "ERROR: " fmt "\n", ## __VA_ARGS__)
 
 #define STR_OR_EMPTY(p) (p != NULL ? p : "")
@@ -42,13 +42,58 @@
 #define CWS_MASK_TMPBUF_SIZE 4096
 
 enum cws_opcode {
-  CWS_OPCODE_CONTINUATION = 0x0,
-  CWS_OPCODE_TEXT = 0x1,
-  CWS_OPCODE_BINARY = 0x2,
-  CWS_OPCODE_CLOSE = 0x8,
-  CWS_OPCODE_PING = 0x9,
-  CWS_OPCODE_PONG = 0xa,
+    CWS_OPCODE_CONTINUATION = 0x0,
+    CWS_OPCODE_TEXT = 0x1,
+    CWS_OPCODE_BINARY = 0x2,
+    CWS_OPCODE_CLOSE = 0x8,
+    CWS_OPCODE_PING = 0x9,
+    CWS_OPCODE_PONG = 0xa,
 };
+
+static bool cws_opcode_is_control(enum cws_opcode opcode) {
+    switch (opcode) {
+    case CWS_OPCODE_CONTINUATION:
+    case CWS_OPCODE_TEXT:
+    case CWS_OPCODE_BINARY:
+        return false;
+    case CWS_OPCODE_CLOSE:
+    case CWS_OPCODE_PING:
+    case CWS_OPCODE_PONG:
+        return true;
+    }
+
+    return true;
+}
+
+static bool cws_close_reason_is_valid(enum cws_close_reason r) {
+    switch (r) {
+    case CWS_CLOSE_REASON_NORMAL:
+    case CWS_CLOSE_REASON_GOING_AWAY:
+    case CWS_CLOSE_REASON_PROTOCOL_ERROR:
+    case CWS_CLOSE_REASON_UNEXPECTED_DATA:
+    case CWS_CLOSE_REASON_INCONSISTENT_DATA:
+    case CWS_CLOSE_REASON_POLICY_VIOLATION:
+    case CWS_CLOSE_REASON_TOO_BIG:
+    case CWS_CLOSE_REASON_MISSING_EXTENSION:
+    case CWS_CLOSE_REASON_SERVER_ERROR:
+    case CWS_CLOSE_REASON_IANA_REGISTRY_START:
+    case CWS_CLOSE_REASON_IANA_REGISTRY_END:
+    case CWS_CLOSE_REASON_PRIVATE_START:
+    case CWS_CLOSE_REASON_PRIVATE_END:
+        return true;
+    case CWS_CLOSE_REASON_NO_REASON:
+    case CWS_CLOSE_REASON_ABRUPTLY:
+        return false;
+    }
+
+    if (r >= CWS_CLOSE_REASON_IANA_REGISTRY_START && r <= CWS_CLOSE_REASON_IANA_REGISTRY_END)
+        return true;
+
+    if (r >= CWS_CLOSE_REASON_PRIVATE_START && r <= CWS_CLOSE_REASON_PRIVATE_END)
+        return true;
+
+    return false;
+}
 
 /*
  * WebSocket is a framed protocol in the format:
@@ -98,11 +143,19 @@ struct cws_data {
     struct curl_slist *headers;
     char accept_key[29];
     struct {
-        struct cws_frame_header frame_header;
-        uint64_t frame_len; /* payload length for current frame */
-        uint64_t total_len; /* total length (note fragmentation) */
-        uint64_t used_len; /* total filled length (note fragmentation) */
-        uint8_t *payload; /* full payload (note fragmentation) */
+        struct {
+            uint8_t *payload;
+            uint64_t used;
+            uint64_t total;
+            enum cws_opcode opcode;
+            bool fin;
+        } current;
+        struct {
+            uint8_t *payload;
+            uint64_t used;
+            uint64_t total;
+            enum cws_opcode opcode;
+        } fragmented;
 
         uint8_t tmpbuf[sizeof(struct cws_frame_header) + sizeof(uint64_t)];
         uint8_t done; /* of tmpbuf, for header */
@@ -221,7 +274,7 @@ bool cws_send(CURL *easy, bool text, const void *msg, size_t msglen) {
                      msg, msglen);
 }
 
-bool cws_ping(CURL *easy, const char *reason) {
+bool cws_ping(CURL *easy, const char *reason, size_t len) {
     struct cws_data *priv;
     char *p = NULL;
 
@@ -232,11 +285,17 @@ bool cws_ping(CURL *easy, const char *reason) {
     }
     priv = (struct cws_data *)p;
 
-    return _cws_send(priv, CWS_OPCODE_PING,
-                     reason, reason ? strlen(reason) : 0);
+    if (len == SIZE_MAX) {
+        if (reason)
+            len = strlen(reason);
+        else
+            len = 0;
+    }
+
+    return _cws_send(priv, CWS_OPCODE_PING, reason, len);
 }
 
-bool cws_pong(CURL *easy, const char *reason) {
+bool cws_pong(CURL *easy, const char *reason, size_t len) {
     struct cws_data *priv;
     char *p = NULL;
 
@@ -247,8 +306,14 @@ bool cws_pong(CURL *easy, const char *reason) {
     }
     priv = (struct cws_data *)p;
 
-    return _cws_send(priv, CWS_OPCODE_PONG,
-                     reason, reason ? strlen(reason) : 0);
+    if (len == SIZE_MAX) {
+        if (reason)
+            len = strlen(reason);
+        else
+            len = 0;
+    }
+
+    return _cws_send(priv, CWS_OPCODE_PONG, reason, len);
 }
 
 static void _cws_cleanup(struct cws_data *priv) {
@@ -267,13 +332,14 @@ static void _cws_cleanup(struct cws_data *priv) {
     free(priv->websocket_protocols.requested);
     free(priv->websocket_protocols.received);
     free(priv->send.buffer);
-    free(priv->recv.payload);
+    free(priv->recv.current.payload);
+    free(priv->recv.fragmented.payload);
     free(priv);
 
     curl_easy_cleanup(easy);
 }
 
-bool cws_close(CURL *easy, enum cws_close_reason reason, const char *reason_text) {
+bool cws_close(CURL *easy, enum cws_close_reason reason, const char *reason_text, size_t reason_text_len) {
     struct cws_data *priv;
     size_t len;
     uint16_t r;
@@ -285,18 +351,28 @@ bool cws_close(CURL *easy, enum cws_close_reason reason, const char *reason_text
         ERR("not CWS (no CURLINFO_PRIVATE): %p", easy);
         return false;
     }
+    curl_easy_setopt(easy, CURLOPT_TIMEOUT, 2);
     priv = (struct cws_data *)p;
+
+    if (reason == 0) {
+        ret = _cws_send(priv, CWS_OPCODE_CLOSE, NULL, 0);
+        priv->closed = true;
+        return ret;
+    }
 
     r = reason;
     if (!reason_text)
         reason_text = "";
 
-    len = sizeof(uint16_t) + strlen(reason_text);
+    if (reason_text_len == SIZE_MAX)
+        reason_text_len = strlen(reason_text);
+
+    len = sizeof(uint16_t) + reason_text_len;
     p = malloc(len);
     memcpy(p, &r, sizeof(uint16_t));
     _cws_hton(p, sizeof(uint16_t));
-    if (strlen(reason_text))
-        memcpy(p + sizeof(uint16_t), reason_text, strlen(reason_text));
+    if (reason_text_len)
+        memcpy(p + sizeof(uint16_t), reason_text, reason_text_len);
 
     ret = _cws_send(priv, CWS_OPCODE_CLOSE, p, len);
     free(p);
@@ -379,7 +455,8 @@ static size_t _cws_receive_header(const char *buffer, size_t count, size_t nitem
                 priv->cbs.on_close((void *)priv->cbs.data,
                                    priv->easy,
                                    CWS_CLOSE_REASON_SERVER_ERROR,
-                                   "server didn't accept the websocket upgrade");
+                                   "server didn't accept the websocket upgrade",
+                                   strlen("server didn't accept the websocket upgrade"));
                 priv->dispatching--;
                 _cws_cleanup(priv);
             }
@@ -421,75 +498,152 @@ static size_t _cws_receive_header(const char *buffer, size_t count, size_t nitem
     return len;
 }
 
+static bool _cws_dispatch_validate(struct cws_data *priv) {
+    if (priv->closed && priv->recv.current.opcode != CWS_OPCODE_CLOSE)
+        return false;
+
+    if (!priv->recv.current.fin && cws_opcode_is_control(priv->recv.current.opcode))
+        ERR("server sent forbidden fragmented control frame opcode=%#x.",
+            priv->recv.current.opcode);
+    else if (priv->recv.current.opcode == CWS_OPCODE_CONTINUATION && priv->recv.fragmented.opcode == 0)
+        ERR("server sent continuation frame after non-fragmentable frame");
+    else
+        return true;
+
+    cws_close(priv->easy, CWS_CLOSE_REASON_PROTOCOL_ERROR, NULL, 0);
+    return false;
+}
+
 static void _cws_dispatch(struct cws_data *priv) {
-    switch (priv->recv.frame_header.opcode) {
-    case CWS_OPCODE_CONTINUATION:
+    if (!_cws_dispatch_validate(priv))
         return;
+
+    switch (priv->recv.current.opcode) {
+    case CWS_OPCODE_CONTINUATION:
+        if (priv->recv.current.fin) {
+            if (priv->recv.fragmented.opcode == CWS_OPCODE_TEXT) {
+                const char *str = (const char *)priv->recv.current.payload;
+                if (priv->recv.current.used == 0)
+                    str = "";
+                if (priv->cbs.on_text)
+                    priv->cbs.on_text((void *)priv->cbs.data, priv->easy, str, priv->recv.current.used);
+            } else if (priv->recv.fragmented.opcode == CWS_OPCODE_BINARY) {
+                if (priv->cbs.on_binary)
+                    priv->cbs.on_binary((void *)priv->cbs.data, priv->easy, priv->recv.current.payload, priv->recv.current.used);
+            }
+            memset(&priv->recv.fragmented, 0, sizeof(priv->recv.fragmented));
+        } else {
+            priv->recv.fragmented.payload = priv->recv.current.payload;
+            priv->recv.fragmented.used = priv->recv.current.used;
+            priv->recv.fragmented.total = priv->recv.current.total;
+            priv->recv.current.payload = NULL;
+            priv->recv.current.used = 0;
+            priv->recv.current.total = 0;
+        }
+        break;
 
     case CWS_OPCODE_TEXT:
-        if (priv->cbs.on_text)
-            priv->cbs.on_text((void *)priv->cbs.data,
-                              priv->easy,
-                              (char *)priv->recv.payload,
-                              priv->recv.used_len);
-        return;
+        if (priv->recv.current.fin) {
+            const char *str = (const char *)priv->recv.current.payload;
+            if (priv->recv.current.used == 0)
+                str = "";
+            if (priv->cbs.on_text)
+                priv->cbs.on_text((void *)priv->cbs.data, priv->easy, str, priv->recv.current.used);
+        } else {
+            priv->recv.fragmented.payload = priv->recv.current.payload;
+            priv->recv.fragmented.used = priv->recv.current.used;
+            priv->recv.fragmented.total = priv->recv.current.total;
+            priv->recv.fragmented.opcode = priv->recv.current.opcode;
+
+            priv->recv.current.payload = NULL;
+            priv->recv.current.used = 0;
+            priv->recv.current.total = 0;
+            priv->recv.current.opcode = 0;
+            priv->recv.current.fin = 0;
+        }
+        break;
 
     case CWS_OPCODE_BINARY:
-        if (priv->cbs.on_binary)
-            priv->cbs.on_binary((void *)priv->cbs.data,
-                                priv->easy,
-                                priv->recv.payload,
-                                priv->recv.used_len);
-        return;
-
-    case CWS_OPCODE_CLOSE:
-        priv->closed = true;
-        if (priv->cbs.on_close) {
-            const char *text = "";
-            uint16_t r = 0;
-            if (priv->recv.used_len >= sizeof(uint16_t)) {
-                memcpy(&r, priv->recv.payload, sizeof(uint16_t));
-                _cws_ntoh(&r, sizeof(uint16_t));
-                text = (const char *)priv->recv.payload + sizeof(uint16_t);
-            }
-            priv->cbs.on_close((void *)priv->cbs.data, priv->easy, r, text);
-        }
-        return;
-
-    case CWS_OPCODE_PING:
-        if (priv->cbs.on_ping) {
-            priv->cbs.on_ping((void *)priv->cbs.data,
-                              priv->easy,
-                              STR_OR_EMPTY((char *)priv->recv.payload));
+        if (priv->recv.current.fin) {
+            if (priv->cbs.on_binary)
+                priv->cbs.on_binary((void *)priv->cbs.data, priv->easy, priv->recv.current.payload, priv->recv.current.used);
         } else {
-            cws_pong(priv->easy, (char *)priv->recv.payload);
-        }
-        return;
+            priv->recv.fragmented.payload = priv->recv.current.payload;
+            priv->recv.fragmented.used = priv->recv.current.used;
+            priv->recv.fragmented.total = priv->recv.current.total;
+            priv->recv.fragmented.opcode = priv->recv.current.opcode;
 
-    case CWS_OPCODE_PONG:
+            priv->recv.current.payload = NULL;
+            priv->recv.current.used = 0;
+            priv->recv.current.total = 0;
+            priv->recv.current.opcode = 0;
+            priv->recv.current.fin = 0;
+        }
+        break;
+
+    case CWS_OPCODE_CLOSE: {
+        enum cws_close_reason reason = CWS_CLOSE_REASON_NO_REASON;
+        const char *str = "";
+        size_t len = priv->recv.current.used;
+
+        if (priv->recv.current.used >= sizeof(uint16_t)) {
+            uint16_t r;
+            memcpy(&r, priv->recv.current.payload, sizeof(uint16_t));
+            _cws_ntoh(&r, sizeof(r));
+            if (!cws_close_reason_is_valid(r)) {
+                cws_close(priv->easy, CWS_CLOSE_REASON_PROTOCOL_ERROR, "invalid close reason", SIZE_MAX);
+                r = CWS_CLOSE_REASON_PROTOCOL_ERROR;
+            }
+            reason = r;
+            str = (const char *)priv->recv.current.payload + sizeof(uint16_t);
+            len = priv->recv.current.used - 2;
+        } else if (priv->recv.current.used > 0 && priv->recv.current.used < sizeof(uint16_t)) {
+            cws_close(priv->easy, CWS_CLOSE_REASON_PROTOCOL_ERROR, "invalid close payload length", SIZE_MAX);
+        }
+
+        if (priv->cbs.on_close)
+            priv->cbs.on_close((void *)priv->cbs.data, priv->easy, reason, str, len);
+
+        if (!priv->closed) {
+            if (reason == CWS_CLOSE_REASON_NO_REASON)
+                reason = 0;
+            cws_close(priv->easy, reason, str, len);
+        }
+        break;
+    }
+
+    case CWS_OPCODE_PING: {
+        const char *str = (const char *)priv->recv.current.payload;
+        if (priv->recv.current.used == 0)
+            str = "";
+        if (priv->cbs.on_ping)
+            priv->cbs.on_ping((void *)priv->cbs.data, priv->easy, str, priv->recv.current.used);
+        else
+            cws_pong(priv->easy, str, priv->recv.current.used);
+        break;
+    }
+
+    case CWS_OPCODE_PONG: {
+        const char *str = (const char *)priv->recv.current.payload;
+        if (priv->recv.current.used == 0)
+            str = "";
         if (priv->cbs.on_pong)
-            priv->cbs.on_pong((void *)priv->cbs.data,
-                              priv->easy,
-                              STR_OR_EMPTY((char *)priv->recv.payload));
-        return;
+            priv->cbs.on_pong((void *)priv->cbs.data, priv->easy, str, priv->recv.current.used);
+        break;
+    }
 
     default:
-        ERR("unexpected WebSocket opcode: %#x", priv->recv.frame_header.opcode);
+        ERR("unexpected WebSocket opcode: %#x.", priv->recv.current.opcode);
+        cws_close(priv->easy, CWS_CLOSE_REASON_PROTOCOL_ERROR, "unexpected opcode", SIZE_MAX);
     }
 }
 
-static size_t _cws_receive_data(const char *buffer, size_t count, size_t nitems, void *data) {
-    struct cws_data *priv = data;
-    size_t len = count * nitems;
+static size_t _cws_process_frame(struct cws_data *priv, const char *buffer, size_t len) {
     size_t used = 0;
 
-    /* start by needing a full frame header */
-    if (priv->recv.needed == 0) {
-        priv->recv.needed = sizeof(struct cws_frame_header);
-        priv->recv.done = 0;
-    }
-
     while (len > 0 && priv->recv.done < priv->recv.needed) {
+        uint64_t frame_len;
+
         if (priv->recv.done < priv->recv.needed) {
             size_t todo = priv->recv.needed - priv->recv.done;
             if (todo > len)
@@ -505,53 +659,75 @@ static size_t _cws_receive_data(const char *buffer, size_t count, size_t nitems,
             continue;
 
         if (priv->recv.needed == sizeof(struct cws_frame_header)) {
-            memcpy(&priv->recv.frame_header,
-                   priv->recv.tmpbuf,
-                   sizeof(struct cws_frame_header));
+            struct cws_frame_header fh;
 
-            if (priv->recv.frame_header.payload_len == 126) {
+            memcpy(&fh, priv->recv.tmpbuf, sizeof(struct cws_frame_header));
+            priv->recv.current.opcode = fh.opcode;
+            priv->recv.current.fin = fh.fin;
+
+            if (fh._reserved || fh.mask)
+                cws_close(priv->easy, CWS_CLOSE_REASON_PROTOCOL_ERROR, NULL, 0);
+
+            if (fh.payload_len == 126) {
+                if (cws_opcode_is_control(fh.opcode))
+                    cws_close(priv->easy, CWS_CLOSE_REASON_PROTOCOL_ERROR, NULL, 0);
                 priv->recv.needed += sizeof(uint16_t);
                 continue;
-            } else if (priv->recv.frame_header.payload_len == 127) {
+            } else if (fh.payload_len == 127) {
+                if (cws_opcode_is_control(fh.opcode))
+                    cws_close(priv->easy, CWS_CLOSE_REASON_PROTOCOL_ERROR, NULL, 0);
                 priv->recv.needed += sizeof(uint64_t);
                 continue;
             } else
-                priv->recv.frame_len = priv->recv.frame_header.payload_len;
-        }
+                frame_len = fh.payload_len;
+        } else if (priv->recv.needed == sizeof(struct cws_frame_header) + sizeof(uint16_t)) {
+            uint16_t plen;
 
-        if (priv->recv.needed == sizeof(struct cws_frame_header) + sizeof(uint16_t)) {
-            uint16_t len;
-
-            memcpy(&len,
+            memcpy(&plen,
                    priv->recv.tmpbuf + sizeof(struct cws_frame_header),
-                   sizeof(len));
-            _cws_ntoh(&len, sizeof(len));
-            priv->recv.frame_len = len;
+                   sizeof(plen));
+            _cws_ntoh(&plen, sizeof(plen));
+            frame_len = plen;
         } else if (priv->recv.needed == sizeof(struct cws_frame_header) + sizeof(uint64_t)) {
-            uint64_t len;
+            uint64_t plen;
 
-            memcpy(&len, priv->recv.tmpbuf + sizeof(struct cws_frame_header),
-                   sizeof(len));
-            _cws_ntoh(&len, sizeof(len));
-            priv->recv.frame_len = len;
+            memcpy(&plen, priv->recv.tmpbuf + sizeof(struct cws_frame_header),
+                   sizeof(plen));
+            _cws_ntoh(&plen, sizeof(plen));
+            frame_len = plen;
+        } else {
+            ERR("needed=%u, done=%u", priv->recv.needed, priv->recv.done);
+            abort();
         }
 
-        if (priv->recv.frame_header.opcode != CWS_OPCODE_CONTINUATION) {
-            priv->recv.total_len = 0;
-            priv->recv.used_len = 0;
+        if (priv->recv.current.opcode == CWS_OPCODE_CONTINUATION) {
+            if (priv->recv.fragmented.opcode == 0)
+                cws_close(priv->easy, CWS_CLOSE_REASON_PROTOCOL_ERROR, "nothing to continue", SIZE_MAX);
+            if (priv->recv.current.payload)
+                free(priv->recv.current.payload);
+
+            priv->recv.current.payload = priv->recv.fragmented.payload;
+            priv->recv.current.used = priv->recv.fragmented.used;
+            priv->recv.current.total = priv->recv.fragmented.total;
+            priv->recv.fragmented.payload = NULL;
+            priv->recv.fragmented.used = 0;
+            priv->recv.fragmented.total = 0;
+        } else if (!cws_opcode_is_control(priv->recv.current.opcode) && priv->recv.fragmented.opcode != 0) {
+            cws_close(priv->easy, CWS_CLOSE_REASON_PROTOCOL_ERROR, "expected continuation or control frames", SIZE_MAX);
         }
 
-        if (priv->recv.frame_len > 0) {
+        if (frame_len > 0) {
             void *tmp;
 
-            tmp = realloc(priv->recv.payload,
-                          priv->recv.total_len + priv->recv.frame_len + 1);
+            tmp = realloc(priv->recv.current.payload,
+                          priv->recv.current.total + frame_len + 1);
             if (!tmp) {
+                cws_close(priv->easy, CWS_CLOSE_REASON_TOO_BIG, NULL, 0);
                 ERR("could not allocate memory");
                 return CURL_READFUNC_ABORT;
             }
-            priv->recv.payload = tmp;
-            priv->recv.total_len += priv->recv.frame_len;
+            priv->recv.current.payload = tmp;
+            priv->recv.current.total += frame_len;
         }
     }
 
@@ -559,39 +735,48 @@ static size_t _cws_receive_data(const char *buffer, size_t count, size_t nitems,
         return used;
 
     /* fill payload */
-    while (len > 0 && priv->recv.used_len < priv->recv.total_len) {
-        size_t todo = priv->recv.total_len - priv->recv.used_len;
+    while (len > 0 && priv->recv.current.used < priv->recv.current.total) {
+        size_t todo = priv->recv.current.total - priv->recv.current.used;
         if (todo > len)
             todo = len;
-        memcpy(priv->recv.payload + priv->recv.used_len, buffer, todo);
-        priv->recv.used_len += todo;
+        memcpy(priv->recv.current.payload + priv->recv.current.used, buffer, todo);
+        priv->recv.current.used += todo;
         used += todo;
         buffer += todo;
         len -= todo;
     }
-    if (priv->recv.total_len > 0)
-        priv->recv.payload[priv->recv.used_len] = '\0';
 
-    if (len == 0 && priv->recv.used_len < priv->recv.total_len)
+    if (priv->recv.current.payload)
+        priv->recv.current.payload[priv->recv.current.used] = '\0';
+
+    if (len == 0 && priv->recv.current.used < priv->recv.current.total)
         return used;
 
-    /* finished? dispatch */
-    if (priv->recv.frame_header.fin) {
-        priv->dispatching++;
+    priv->dispatching++;
 
-        _cws_dispatch(priv);
+    _cws_dispatch(priv);
 
-        free(priv->recv.payload);
-        priv->recv.payload = NULL;
-        priv->recv.done = 0;
-        priv->recv.needed = 0;
-        priv->recv.used_len = 0;
-        priv->recv.total_len = 0;
-        priv->dispatching--;
-        _cws_cleanup(priv);
-    }
+    priv->recv.done = 0;
+    priv->recv.needed = sizeof(struct cws_frame_header);
+    priv->recv.current.used = 0;
+    priv->recv.current.total = 0;
+
+    priv->dispatching--;
+    _cws_cleanup(priv);
 
     return used;
+}
+
+static size_t _cws_receive_data(const char *buffer, size_t count, size_t nitems, void *data) {
+    struct cws_data *priv = data;
+    size_t len = count * nitems;
+    while (len > 0) {
+        size_t used = _cws_process_frame(priv, buffer, len);
+        len -= used;
+        buffer += used;
+    }
+
+    return count * nitems;
 }
 
 static size_t _cws_send_data(char *buffer, size_t count, size_t nitems, void *data) {
@@ -616,7 +801,7 @@ static size_t _cws_send_data(char *buffer, size_t count, size_t nitems, void *da
          */
         memmove(priv->send.buffer,
                 priv->send.buffer + todo,
-                todo - priv->send.len);
+                priv->send.len - todo);
     } else {
         free(priv->send.buffer);
         priv->send.buffer = NULL;
@@ -651,6 +836,10 @@ CURL *cws_new(const char *url, const char *websocket_protocols, const struct cws
     struct cws_data *priv;
     char key_header[] = "Sec-WebSocket-Key: 01234567890123456789....";
     char *tmp = NULL;
+    const curl_version_info_data *cver = curl_version_info(CURLVERSION_NOW);
+
+    if (cver->version_num < 0x073202)
+        ERR("CURL version '%s'. At least '7.50.2' is required for WebSocket to work reliably", cver->version);
 
     if (!url)
         return NULL;
@@ -671,6 +860,9 @@ CURL *cws_new(const char *url, const char *websocket_protocols, const struct cws
 
     if (callbacks)
         priv->cbs = *callbacks;
+
+    priv->recv.needed = sizeof(struct cws_frame_header);
+    priv->recv.done = 0;
 
     /* curl doesn't support ws:// or wss:// scheme, rewrite to http/https */
     if (strncmp(url, "ws://", strlen("ws://")) == 0) {
