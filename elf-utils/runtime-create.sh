@@ -115,7 +115,8 @@ create_parent_dir() {
         create_parent_dir `dirname $sdir`
         echo "INFO: dir ${COLOR_DIR}$odir${COLOR_RESET}"
         # no mkdir -p: preserve directory permissions, user and xattr
-        (cd $SOURCE_DIR && tar --no-recursion --preserve-permissions --xattrs -cf - $cdir 2>/dev/null) | (cd $OUTPUT_DIR/$OUTPUT_PREFIX && tar --preserve-permissions --xattrs -xf - ) || die "could not create parent directory: $odir"
+        (cd $SOURCE_DIR && tar --no-recursion --preserve-permissions --xattrs -cf - ./$cdir 2>/dev/null) | (cd $OUTPUT_DIR/$OUTPUT_PREFIX && tar --preserve-permissions --xattrs -xf - ) || die "could not create parent directory: $odir"
+        test ! -d $odir && die "failed to create directory: $odir"
         return 0
     else
         die "Unsupported parent directory type $sdir: not link or directory"
