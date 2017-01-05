@@ -167,7 +167,7 @@ cp_with_deps() {
         cp_with_deps "$target" || exit 1
     elif [ `head $f -c 4` == "$ELF_HEADER" ]; then
         echo "INFO: elf ${COLOR_ELF}$odir/$fname${COLOR_RESET}"
-        cp -a "$f" "$odir/$fname" || die "cp -a $f $odir/$fname"
+        cp -an "$f" "$odir/$fname" || die "cp -an $f $odir/$fname"
         chmod u+w "$odir/$fname"
         if [ -n "$STRIP" ]; then
             $STRIP "$odir/$fname"
@@ -207,7 +207,7 @@ cp_with_deps() {
     elif [ `head $f -c 3` == "#!/" ]; then
         local INTERPRETER=`head $f -n 1 | cut -d'!' -f2 | cut -f1`
         echo "INFO: scr ${COLOR_SCR}$odir/$fname${COLOR_RESET} ${COLOR_ELF}$INTERPRETER${COLOR_RESET}"
-        cp -a "$f" "$odir/$fname" || die "cp -a $f $odir/$fname"
+        cp -an "$f" "$odir/$fname" || die "cp -an $f $odir/$fname"
         if [ -n "$INTERPRETER" ]; then
             cp_with_deps "$SOURCE_DIR/$INTERPRETER" || exit 1
             sed -e "s:^#!${INTERPRETER}:#!${OUTPUT_PREFIX}/${INTERPRETER}:" -i $odir/$fname || die "sed -e s:^#!${INTERPRETER}:#!${OUTPUT_PREFIX}/${INTERPRETER}: -i $odir/$fname"
@@ -216,7 +216,7 @@ cp_with_deps() {
         fi
     else
         echo "INFO: reg ${COLOR_REG}$odir/$fname${COLOR_RESET}"
-        cp -a "$f" "$odir/$fname" || die "cp -a $f $odir/$fname"
+        cp -an "$f" "$odir/$fname" || die "cp -an $f $odir/$fname"
     fi
 }
 
