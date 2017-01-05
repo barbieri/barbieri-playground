@@ -165,7 +165,7 @@ cp_with_deps() {
         echo "INFO: lnk ${COLOR_LNK}$odir/$fname${COLOR_RESET} $dest_target"
         ln -sn "$dest_target" "$odir/$fname" || die "ln -sn $dest_target $odir/$fname"
         cp_with_deps "$target" || exit 1
-    elif [ `head $f -c 4` == "$ELF_HEADER" ]; then
+    elif [ "`head $f -c 4`" == "$ELF_HEADER" ]; then
         echo "INFO: elf ${COLOR_ELF}$odir/$fname${COLOR_RESET}"
         cp -an "$f" "$odir/$fname" || die "cp -an $f $odir/$fname"
         chmod u+w "$odir/$fname"
@@ -204,7 +204,7 @@ cp_with_deps() {
                 fi
             done || die "did not find $dep"
         done
-    elif [ `head $f -c 3` == "#!/" ]; then
+    elif [ "`head $f -c 3`" == "#!/" ]; then
         local INTERPRETER=`head $f -n 1 | cut -d'!' -f2 | cut -f1`
         echo "INFO: scr ${COLOR_SCR}$odir/$fname${COLOR_RESET} ${COLOR_ELF}$INTERPRETER${COLOR_RESET}"
         cp -an "$f" "$odir/$fname" || die "cp -an $f $odir/$fname"
