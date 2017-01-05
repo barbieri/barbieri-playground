@@ -107,19 +107,28 @@ resolve_symlink() {
     fi
 }
 
+output_path() {
+    path="$1"
+    if [ "${path#$OUTPUT_PREFIX}" = ${path} ]; then
+        realpath -sm $OUTPUT_PREFIX/$path
+    else
+        echo $path
+    fi
+}
+
 dest_symlink() {
     dest=`readlink $1`
     if [ ${dest#/} = ${dest} ]; then
         echo $dest
     else
-        realpath -sm $OUTPUT_PREFIX/$dest
+        output_path $dest
     fi
 }
 
 create_parent_dir() {
     local sdir="$1"
     local cdir=${sdir#$SOURCE_DIR}
-    local odir=`realpath -sm $OUTPUT_DIR/$OUTPUT_PREFIX/$cdir`
+    local odir=$OUTPUT_DIR`output_path $cdir`
 
     if [ -e "$odir" ]; then
         return 0
@@ -137,7 +146,12 @@ create_parent_dir() {
         create_parent_dir `dirname $sdir`
         echo "INFO: dir ${COLOR_DIR}$odir${COLOR_RESET}"
         # no mkdir -p: preserve directory permissions, user and xattr
-        (cd $SOURCE_DIR && tar --no-recursion --preserve-permissions --xattrs -cf - ./$cdir 2>/dev/null) | (cd $OUTPUT_DIR/$OUTPUT_PREFIX && tar --preserve-permissions --xattrs -xf - ) || die "could not create parent directory: $odir"
+        if [ ${cdir#$OUTPUT_PREFIX} = $cdir ]; then
+            local obase=$OUTPUT_DIR/$OUTPUT_PREFIX
+        else
+            local obase=$OUTPUT_DIR
+        fi
+        (cd $SOURCE_DIR && tar --no-recursion --preserve-permissions --xattrs -cf - ./$cdir 2>/dev/null) | (cd $obase && tar --preserve-permissions --xattrs -xf - ) || die "could not create parent directory: $odir"
         test ! -d $odir && die "failed to create directory: $odir"
         return 0
     else
@@ -151,7 +165,7 @@ cp_with_deps() {
     local sdir=`dirname $f`
     local cdir=${sdir#$SOURCE_DIR}
     local fname=`basename $f`
-    local odir=`realpath -sm $OUTPUT_DIR/$OUTPUT_PREFIX/$cdir`
+    local odir=$OUTPUT_DIR`output_path $cdir`
 
     if [ -e "$odir/$fname" ]; then
         return 0
@@ -176,8 +190,8 @@ cp_with_deps() {
         local INTERPRETER=`$PATCHELF --print-interpreter $odir/$fname 2>/dev/null`
         if [ -n "$INTERPRETER" ]; then
             cp_with_deps "$SOURCE_DIR/$INTERPRETER" || exit 1
-            echo "INFO: elf ${COLOR_ELF}$odir/$fname${COLOR_RESET} --set-interpreter=${COLOR_ELF}$OUTPUT_PREFIX/$INTERPRETER${COLOR_RESET}"
-            $PATCHELF --set-interpreter "$OUTPUT_PREFIX/$INTERPRETER" "$odir/$fname" || die "$PATCHELF --set-interpreter $OUTPUT_PREFIX/$INTERPRETER $odir/$fname"
+            echo "INFO: elf ${COLOR_ELF}$odir/$fname${COLOR_RESET} --set-interpreter=${COLOR_ELF}`output_path $INTERPRETER`${COLOR_RESET}"
+            $PATCHELF --set-interpreter "`output_path $INTERPRETER`" "$odir/$fname" || die "$PATCHELF --set-interpreter `output_path $INTERPRETER` $odir/$fname"
         fi
 
         $PATCHELF --remove-rpath "$odir/$fname" || die "$PATCHELF --remove-rpath $odir/$fname"
@@ -190,7 +204,8 @@ cp_with_deps() {
                 `$PATCHELF --print-rpath $f 2>/dev/null | sed -e "s#\(^\|:\)\([^:]\+\)#${SOURCE_DIR}\2 #g"` \
                 -name "$dep" 2>/dev/null | while read depfile; do
                 cp_with_deps "$depfile"
-                local depdir=$OUTPUT_PREFIX`dirname ${depfile#$SOURCE_DIR}`
+                local depdir=`dirname ${depfile#$SOURCE_DIR}`
+                local depdir=`output_path $depdir`
                 local rpath=`$PATCHELF --print-rpath $odir/$fname`
                 if ! echo "$rpath" | grep -e "\(^\|:\)$depdir\(\$\|:\)" >/dev/null 2>/dev/null; then
                     if [ -z "$rpath" ]; then
