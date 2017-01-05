@@ -97,6 +97,16 @@ mkdir -p $OUTPUT_DIR/$OUTPUT_PREFIX || die "mkdir -p $OUTPUT_DIR/$OUTPUT_PREFIX"
 
 ELF_HEADER=`echo -e "\x7fELF"`
 
+resolve_symlink() {
+    sdir="$1"
+    dest=`readlink $2`
+    if [ ${dest#/} = ${dest} ]; then
+        realpath -sm $sdir/$dest
+    else
+        realpath -sm $SOURCE_DIR/$dest
+    fi
+}
+
 create_parent_dir() {
     local sdir="$1"
     local cdir=${sdir#$SOURCE_DIR}
@@ -107,8 +117,9 @@ create_parent_dir() {
     elif [ -z "$sdir" -o "$sdir" = "$SOURCE_DIR" ]; then
         return 0
     elif [ -L "$sdir" ]; then
-        create_parent_dir `dirname $sdir`
-        create_parent_dir `readlink -f $sdir`
+        local pdir=`dirname $sdir`
+        create_parent_dir $pdir
+        create_parent_dir `resolve_symlink $pdir $sdir`
         echo "INFO: lnk ${COLOR_LNK}$odir${COLOR_RESET} `readlink $sdir`"
         cp -a "$sdir" "$odir" || die "could not create parent dir as symlink: $odir"
     elif [ -d "$sdir" ]; then
@@ -140,7 +151,7 @@ cp_with_deps() {
     if [ -L "$f" ]; then
         echo "INFO: lnk ${COLOR_LNK}$odir/$fname${COLOR_RESET} `readlink $f`"
         cp -a "$f" "$odir/$fname" || die "cp -a $f $odir/$fname"
-        cp_with_deps `readlink -f $f` || exit 1
+        cp_with_deps `resolve_symlink $sdir $f` || exit 1
     elif [ `head $f -c 4` == "$ELF_HEADER" ]; then
         echo "INFO: elf ${COLOR_ELF}$odir/$fname${COLOR_RESET}"
         cp -a "$f" "$odir/$fname" || die "cp -a $f $odir/$fname"
