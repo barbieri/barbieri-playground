@@ -107,6 +107,15 @@ resolve_symlink() {
     fi
 }
 
+dest_symlink() {
+    dest=`readlink $1`
+    if [ ${dest#/} = ${dest} ]; then
+        echo $dest
+    else
+        realpath -sm $OUTPUT_PREFIX/$dest
+    fi
+}
+
 create_parent_dir() {
     local sdir="$1"
     local cdir=${sdir#$SOURCE_DIR}
@@ -118,10 +127,12 @@ create_parent_dir() {
         return 0
     elif [ -L "$sdir" ]; then
         local pdir=`dirname $sdir`
+        local target=`resolve_symlink $pdir $sdir`
+        local dest_target=`dest_symlink $sdir`
         create_parent_dir $pdir
-        create_parent_dir `resolve_symlink $pdir $sdir`
-        echo "INFO: lnk ${COLOR_LNK}$odir${COLOR_RESET} `readlink $sdir`"
-        cp -a "$sdir" "$odir" || die "could not create parent dir as symlink: $odir"
+        create_parent_dir $target
+        echo "INFO: lnk ${COLOR_LNK}$odir${COLOR_RESET} $dest_target"
+        ln -sn "$dest_target" "$odir" || die "could not create parent dir as symlink: $odir"
     elif [ -d "$sdir" ]; then
         create_parent_dir `dirname $sdir`
         echo "INFO: dir ${COLOR_DIR}$odir${COLOR_RESET}"
@@ -149,9 +160,11 @@ cp_with_deps() {
     create_parent_dir "$sdir"
 
     if [ -L "$f" ]; then
-        echo "INFO: lnk ${COLOR_LNK}$odir/$fname${COLOR_RESET} `readlink $f`"
-        cp -a "$f" "$odir/$fname" || die "cp -a $f $odir/$fname"
-        cp_with_deps `resolve_symlink $sdir $f` || exit 1
+        local target=`resolve_symlink $sdir $f`
+        local dest_target=`dest_symlink $f`
+        echo "INFO: lnk ${COLOR_LNK}$odir/$fname${COLOR_RESET} $dest_target"
+        ln -sn "$dest_target" "$odir/$fname" || die "ln -sn $dest_target $odir/$fname"
+        cp_with_deps "$target" || exit 1
     elif [ `head $f -c 4` == "$ELF_HEADER" ]; then
         echo "INFO: elf ${COLOR_ELF}$odir/$fname${COLOR_RESET}"
         cp -a "$f" "$odir/$fname" || die "cp -a $f $odir/$fname"
