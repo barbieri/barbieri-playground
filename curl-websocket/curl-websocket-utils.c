@@ -146,7 +146,7 @@ static inline bool _cws_header_has_prefix(const char *buffer, const size_t bufle
 
 static inline void _cws_hton(void *mem, uint8_t len)
 {
-#if __BYTE_ORDER__ != __ORDER_BIG_ENDIAN__
+#if __BYTE_ORDER__ != __BIG_ENDIAN
     uint8_t *bytes;
     uint8_t i, mid;
 
@@ -164,7 +164,7 @@ static inline void _cws_hton(void *mem, uint8_t len)
 
 static inline void _cws_ntoh(void *mem, uint8_t len)
 {
-#if __BYTE_ORDER__ != __ORDER_BIG_ENDIAN__
+#if __BYTE_ORDER__ != __BIG_ENDIAN
     uint8_t *bytes;
     uint8_t i, mid;
 
