@@ -172,9 +172,30 @@ export CPPFLAGS="-I$EFL_WIN64_PREFIX/include -DECORE_WIN64_WIP_POZEFLKSD"
 export LDFLAGS="-L$EFL_WIN64_LIBDIR"
 export CFLAGS="-pipe -O2 -W -Wall -Wextra -g -ggdb3 -mtune=core2"
 export HOST="--host=x86_64-w64-mingw32"
+export CC="x86_64-w64-mingw32-gcc"
+export CXX="x86_64-w64-mingw32-g++"
 export NATIVE_EOLIAN_GEN=`which eolian_gen`
+export NATIVE_EDJE_CC=`which edje_cc`
+export NATIVE_ELM_PREFS_CC=`which elm_prefs_cc`
 
-EFL_WIN64_OPTS="--prefix=$EFL_WIN64_PREFIX $HOST --disable-static --with-windows-version=win7 --with-tests=none --with-crypto=none --disable-gstreamer1 --disable-gstreamer --disable-pulseaudio --disable-physics --disable-libmount --disable-valgrind --enable-lua-old --disable-avahi --disable-image-loader-jp2k --enable-i-really-know-what-i-am-doing-and-that-this-will-probably-break-things-and-i-will-fix-them-myself-and-send-patches-aaa --with-bin-eolian-gen=$NATIVE_EOLIAN_GEN"
+EFL_WIN64_OPTS="--prefix=$EFL_WIN64_PREFIX $HOST "
+EFL_WIN64_OPTS="$EFL_WIN64_OPTS --enable-i-really-know-what-i-am-doing-and-that-this-will-probably-break-things-and-i-will-fix-them-myself-and-send-patches-aaa "
+EFL_WIN64_OPTS="$EFL_WIN64_OPTS --with-bin-eolian-gen=$NATIVE_EOLIAN_GEN"
+EFL_WIN64_OPTS="$EFL_WIN64_OPTS --with-bin-edje-cc=$NATIVE_EDJE_CC"
+EFL_WIN64_OPTS="$EFL_WIN64_OPTS --with-bin-elm-prefs-cc=$NATIVE_ELM_PREFS_CC"
+EFL_WIN64_OPTS="$EFL_WIN64_OPTS --disable-static "
+EFL_WIN64_OPTS="$EFL_WIN64_OPTS --with-windows-version=win7 "
+EFL_WIN64_OPTS="$EFL_WIN64_OPTS --with-tests=none "
+EFL_WIN64_OPTS="$EFL_WIN64_OPTS --disable-gstreamer1 "
+EFL_WIN64_OPTS="$EFL_WIN64_OPTS --disable-gstreamer "
+EFL_WIN64_OPTS="$EFL_WIN64_OPTS --disable-pulseaudio "
+EFL_WIN64_OPTS="$EFL_WIN64_OPTS --disable-physics "
+EFL_WIN64_OPTS="$EFL_WIN64_OPTS --disable-libmount "
+EFL_WIN64_OPTS="$EFL_WIN64_OPTS --disable-valgrind "
+EFL_WIN64_OPTS="$EFL_WIN64_OPTS --enable-lua-old "
+EFL_WIN64_OPTS="$EFL_WIN64_OPTS --disable-avahi "
+EFL_WIN64_OPTS="$EFL_WIN64_OPTS --disable-image-loader-jp2k "
+EFL_WIN64_OPTS="$EFL_WIN64_OPTS --disable-cxx-bindings "
 
 echo "Suggestion: ./configure $EFL_WIN64_OPTS"
 
@@ -212,7 +233,7 @@ fi
 echo -e "\\033[1;33mrunning configure...\\033[0m"
 ./configure $EFL_WIN64_OPTS || exit 1
 echo -e "\\033[1;33mrunning make...\\033[0m"
-make || exit 1
+make ${MAKEOPTS} || exit 1
 echo -e "\\033[1;33mrunning make install...\\033[0m"
 make install || exit 1
 echo -e "\\033[1;33mfinished. Installed at $EFL_WIN64_PREFIX...\\033[0m"
