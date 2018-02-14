@@ -1,0 +1,20 @@
+#!/bin/sh /etc/rc.common
+
+START=99
+
+USE_PROCD=1
+NAME=wifi-disconnect-low-signal.lua
+PROG=/usr/bin/wifi-disconnect-low-signal.lua
+
+start_service() {
+	procd_open_instance
+	procd_set_param command "$PROG"
+        procd_set_param file /etc/config/wireless
+	procd_set_param respawn ${respawn_threshold:-3600} ${respawn_timeout:-5} ${respawn_retry:-5}
+	procd_close_instance
+}
+
+reload_service() {
+    stop
+    start
+}
