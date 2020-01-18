@@ -1,0 +1,294 @@
+# BEGIN: Replace things here --
+
+servers = (
+  {
+    address = "irc.freenode.net";
+    chatnet = "freenode";
+    port = "6697";
+    use_ssl = "yes";
+    ssl_verify = "yes";
+    autoconnect = "yes";
+  }
+);
+
+chatnets = {
+  freenode = {
+    type = "IRC";
+    # if you want a different nickname for this chatnet:
+    nick = "YOURNICK";
+    # if you registered with NickServ
+    autosendcmd = "/^msg nickserv identify YOURNICKSERV_PASS";
+  };
+};
+
+channels = (
+  { name = "#SOME_CHANNEL_HERE"; chatnet = "freenode"; autojoin = "yes"; },
+);
+
+settings = {
+  core = {
+    real_name = "YOUR NAME HERE";
+    user_name = "YOURNAME";
+    nick = "YOURNICK";
+  };
+  "fe-text" = { actlist_sort = "refnum"; };
+  "irc/core" = { alternate_nick = "YOURNICK[2]"; };
+  "perl/core/scripts" = {
+    awl_display_key = "$Q:$H$C";
+    awl_block = "-15";
+    screen_away_nick = "YOURNICK";
+    awl_maxlines = "0";
+    awl_hide_data = "0";
+  };
+
+  # mostly what to log and beep (console alerts)
+  "fe-common/core" = {
+    beep_when_window_active = "yes";
+    beep_when_away = "yes";
+    beep_msg_level = "MSGS NOTICES DCC DCCMSGS HILIGHT";
+    autolog = "yes";
+    term_charset = "UTF-8";
+    activity_hide_level = "0";
+
+    # If you want to use my theme, k-s.theme
+    theme = "k-s";
+  };
+};
+
+# END: Replace things here --
+
+
+# Some Visual formatting:
+windows = {
+  1 = { immortal = "yes"; name = "(status)"; level = "ALL"; };
+  2 = { name = "hilight"; sticky = "yes"; };
+};
+
+mainwindows = {
+  1 = { first_line = "8"; lines = "46"; };
+  2 = { first_line = "1"; lines = "7"; };
+};
+
+statusbar = {
+  # formats:
+  # when using {templates}, the template is shown only if it's argument isn't
+  # empty unless no argument is given. for example {sb} is printed always,
+  # but {sb $T} is printed only if $T isn't empty.
+
+  items = {
+    # start/end text in statusbars
+    barstart = "{sbstart}";
+    barend = "{sbend}";
+
+    sb_window_start = "{sb_window_start}";
+    sb_window_end = "{sb_window_end}";
+
+    sb_window_inactive_start = "{sb_window_inactive_start}";
+    sb_window_inactive_end = "{sb_window_inactive_end}";
+
+    topicbarstart = "{topicsbstart}";
+    topicbarend = "{topicsbend}";
+
+    # treated "normally", you could change the time/user name to whatever
+    time = "{sb $Z}";
+    user = "{sb {sbnickmode $cumode}{sbnick $N}{sbmode $usermode}{sbaway $A}}";
+
+    # treated specially .. window is printed with non-empty windows,
+    # window_empty is printed with empty windows
+    window = "{sb_window {sb_window_channel $winref $tag $itemname{sbmode $M}}} ";
+    window_empty = "{sb_window $winref{sbservertag $tag}}";
+
+    window_inactive = "{sb_window_inactive $winref:$tag/$itemname{sbmode $M}}";
+    window_inactive_empty = "{sb_window_inactive $winref{sbservertag $tag}}";
+
+
+    prompt = "{prompt $[.15]itemname}";
+    prompt_empty = "{prompt $winname}";
+    topic = " $topic";
+    topic_empty = "Irssi v$J - http://irssi.org/help/";
+
+    # all of these treated specially, they're only displayed when needed
+    lag = "{sb Lag: $0-}";
+    act = "{sb Act: $0-}";
+    more = "-- more --";
+  };
+
+  # there's two type of statusbars. root statusbars are either at the top
+  # of the screen or at the bottom of the screen. window statusbars are at
+  # the top/bottom of each split window in screen.
+  default = {
+    # the "default statusbar" to be displayed at the bottom of the window.
+    # contains all the normal items.
+    window = {
+
+      # window, root
+      type = "window";
+      # top, bottom
+      placement = "bottom";
+      # number
+      position = "1";
+      # active, inactive, always
+      visible = "active";
+
+      # list of items in statusbar in the display order
+      items = {
+        sb_window_start = { priority = "100"; };
+        time = { };
+        user = { };
+        window = { };
+        window_empty = { };
+        lag = { priority = "-1"; };
+        more = { priority = "-1"; alignment = "right"; };
+        sb_window_end = { priority = "-100"; alignment = "right"; };
+        usercount = { };
+      };
+    };
+
+    # statusbar to use in inactive split windows
+    window_inact = {
+      type = "window";
+      placement = "bottom";
+      position = "1";
+      visible = "inactive";
+      items = {
+        sb_window_inactive_start = { priority = "100"; };
+        window_inactive_ = { };
+        window_inactive_empty = { };
+        more = { priority = "-1"; alignment = "right"; };
+        sb_window_inactive_end = {
+          priority = "-100";
+          alignment = "right";
+        };
+      };
+    };
+
+    # we treat input line as yet another statusbar :) It's possible to
+    # add other items before or after the input line item.
+    prompt = {
+      type = "root";
+      placement = "bottom";
+      # we want to be at the bottom always
+      position = "100";
+      visible = "always";
+      items = {
+        prompt = { priority = "-1"; };
+        prompt_empty = { priority = "-1"; };
+        # treated specially, this is the real input line.
+        input = { priority = "10"; };
+      };
+    };
+
+    # topicbar
+    topic = {
+      type = "root";
+      placement = "top";
+      position = "1";
+      visible = "always";
+      items = {
+        topicbarstart = { priority = "100"; };
+        topic = { };
+        topic_empty = { };
+        topicbarend = { priority = "-100"; alignment = "right"; };
+      };
+    };
+    info = { disabled = "yes"; };
+    remove = { };
+    awl_0 = {
+      items = {
+        barstart = { priority = "100"; };
+        awl_0 = { };
+        barend = { priority = "100"; alignment = "right"; };
+      };
+    };
+    awl_1 = {
+      items = {
+        barstart = { priority = "100"; };
+        awl_1 = { };
+        barend = { priority = "100"; alignment = "right"; };
+      };
+    };
+    awl_2 = {
+      items = {
+        barstart = { priority = "100"; };
+        awl_2 = { };
+        barend = { priority = "100"; alignment = "right"; };
+      };
+    };
+    awl_3 = {
+      items = {
+        barstart = { priority = "100"; };
+        awl_3 = { };
+        barend = { priority = "100"; alignment = "right"; };
+      };
+    };
+    awl_4 = {
+      items = {
+        barstart = { priority = "100"; };
+        awl_4 = { };
+        barend = { priority = "100"; alignment = "right"; };
+      };
+    };
+  };
+};
+
+# From here on, mostly helpers:
+
+keyboard = (
+  { key = "meta-z"; id = "change_window"; data = "20"; },
+  { key = "meta-x"; id = "change_window"; data = "21"; },
+  { key = "meta-c"; id = "change_window"; data = "22"; },
+  { key = "meta-v"; id = "change_window"; data = "23"; }
+);
+
+aliases = {
+  J = "join";
+  WJOIN = "join -window";
+  WQUERY = "query -window";
+  LEAVE = "part";
+  BYE = "quit";
+  EXIT = "quit";
+  SIGNOFF = "quit";
+  DESCRIBE = "action";
+  DATE = "time";
+  HOST = "userhost";
+  LAST = "lastlog";
+  SAY = "msg *";
+  WI = "whois";
+  WII = "whois $0 $0";
+  WW = "whowas";
+  W = "who";
+  N = "names";
+  M = "msg";
+  T = "topic";
+  C = "clear";
+  CL = "clear";
+  K = "kick";
+  KB = "kickban";
+  KN = "knockout";
+  BANS = "ban";
+  B = "ban";
+  MUB = "unban *";
+  UB = "unban";
+  IG = "ignore";
+  UNIG = "unignore";
+  SB = "scrollback";
+  UMODE = "mode $N";
+  WC = "window close";
+  WN = "window new hide";
+  SV = "say Irssi $J ($V) - http://irssi.org/";
+  GOTO = "sb goto";
+  CHAT = "dcc chat";
+  RUN = "SCRIPT LOAD";
+  CALC = "exec - if which bc &>/dev/null\\; then echo '$*' | bc | awk '{print \"$*=\"$$1}'\\; else echo bc was not found\\; fi";
+  SBAR = "STATUSBAR";
+  INVITELIST = "mode $C +I";
+  Q = "QUERY";
+  "MANUAL-WINDOWS" = "set use_status_window off;set autocreate_windows off;set autocreate_query_level none;set autoclose_windows off;set reuse_unused_windows on;save";
+  EXEMPTLIST = "mode $C +e";
+  ATAG = "WINDOW SERVER";
+  wg = "window goto";
+  AME = "foreach channel ${k}me $-; foreach query ${k}me $-";
+  ASAY = "foreach channel ${k}msg * $-; foreach query ${k}msg * $-";
+};
+
+
