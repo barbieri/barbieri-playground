@@ -393,10 +393,12 @@ function get_wifi_devices()
          dbg("%s: disabled by config file", name)
       else
          for _, iface in ipairs(radio.interfaces) do
-            local dev = Device.new(iface.ifname, iface.section)
-            if dev ~= nil then
-               devices[#devices + 1] = dev
-               dbg("%s: %s", name, tostring(dev))
+            if iface.config.mode == "ap" then
+               local dev = Device.new(iface.ifname, iface.section)
+               if dev ~= nil then
+                  devices[#devices + 1] = dev
+                  dbg("%s: %s", name, tostring(dev))
+               end
             end
          end
       end
