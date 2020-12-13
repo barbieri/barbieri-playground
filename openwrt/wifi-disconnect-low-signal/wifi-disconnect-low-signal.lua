@@ -122,7 +122,7 @@ end
 function STA:update(info)
    self.signal = info.signal
    if self.signal > 0 then
-      self.signal = -120
+      self.signal = -128 - (127 - self.signal)
    end
    self.noise = info.noise
    self.snr = self.signal - self.noise
