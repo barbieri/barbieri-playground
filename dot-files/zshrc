@@ -1,0 +1,305 @@
+# If you come from bash you might have to change your $PATH.
+export NPM_PACKAGES="${HOME}/.npm-packages"
+export PATH=$HOME/bin:$NPM_PACKAGES/bin:/usr/local/bin:$PATH
+
+export LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8
+export EDITOR="$HOME/bin/emacs"
+export ANDROID_HOME=$HOME/Library/Android/sdk
+export PATH=$PATH:$ANDROID_HOME/tools
+export PATH=$PATH:$ANDROID_HOME/platform-tools
+
+export PIPENV_VENV_IN_PROJECT=1
+
+export PYENV_ROOT="$HOME/.pyenv"
+export FLUTTER_ROOT="$HOME/Development/sdk/flutter"
+export PATH="$PYENV_ROOT/bin:$FLUTTER_ROOT/bin:$PATH"
+
+eval "$(pyenv init -)"
+
+# Unset manpath so we can inherit from /etc/manpath via the `manpath` command
+unset MANPATH # delete if you already modified MANPATH elsewhere in your config
+export MANPATH="$NPM_PACKAGES/share/man:$(manpath)"
+
+HISTFILE=~/.histfile
+HISTSIZE=10000
+SAVEHIST=10000
+setopt appendhistory autocd beep extendedglob notify
+
+source ~/.zsh-private
+
+source ~/.oh-my-zsh/plugins/history-substring-search/history-substring-search.zsh
+
+# Path to your oh-my-zsh installation.
+  export ZSH=$HOME/.oh-my-zsh
+
+# Set name of the theme to load. Optionally, if you set this to "random"
+# it'll load a random theme each time that oh-my-zsh is loaded.
+# See https://github.com/robbyrussell/oh-my-zsh/wiki/Themes
+
+#  ZSH_THEME="agnoster"
+  ZSH_THEME="k-s"
+
+# Uncomment the following line to use case-sensitive completion.
+# CASE_SENSITIVE="true"
+
+# Uncomment the following line to use hyphen-insensitive completion. Case
+# sensitive completion must be off. _ and - will be interchangeable.
+HYPHEN_INSENSITIVE="true"
+
+# Uncomment the following line to disable bi-weekly auto-update checks.
+# DISABLE_AUTO_UPDATE="true"
+
+# Uncomment the following line to change how often to auto-update (in days).
+# export UPDATE_ZSH_DAYS=13
+
+# Uncomment the following line to disable colors in ls.
+# DISABLE_LS_COLORS="true"
+
+# Uncomment the following line to disable auto-setting terminal title.
+# DISABLE_AUTO_TITLE="true"
+
+# Uncomment the following line to enable command auto-correction.
+#  ENABLE_CORRECTION="true"
+
+# Uncomment the following line to display red dots whilst waiting for completion.
+  COMPLETION_WAITING_DOTS="true"
+
+# Uncomment the following line if you want to disable marking untracked files
+# under VCS as dirty. This makes repository status check for large repositories
+# much, much faster.
+# DISABLE_UNTRACKED_FILES_DIRTY="true"
+
+# Uncomment the following line if you want to change the command execution time
+# stamp shown in the history command output.
+# The optional three formats: "mm/dd/yyyy"|"dd.mm.yyyy"|"yyyy-mm-dd"
+  HIST_STAMPS="yyyy-mm-dd"
+
+# Would you like to use another custom folder than $ZSH/custom?
+# ZSH_CUSTOM=/path/to/new-custom-folder
+
+# Which plugins would you like to load? (plugins can be found in ~/.oh-my-zsh/plugins/*)
+# Custom plugins may be added to ~/.oh-my-zsh/custom/plugins/
+# Example format: plugins=(rails git textmate ruby lighthouse)
+# Add wisely, as too many plugins slow down shell startup.
+plugins=(git history-substring-search colorize safe-paste urltools virtualenv)
+
+source $ZSH/oh-my-zsh.sh
+
+# cache for slow commands
+zstyle ':completion:*' use-cache on
+zstyle ':completion:*' cache-path ~/.zsh/cache
+zstyle ':completion:*' rehash true
+
+# Fuzzy matching of completions for when you mistype them
+zstyle ':completion:*' completer _complete _match _approximate
+zstyle ':completion:*:match:*' original only
+zstyle ':completion:*:approximate:*' max-errors 1 numeric
+
+# kill completes usign a menu
+zstyle ':completion:*:*:kill:*' menu yes select
+zstyle ':completion:*:kill:*'   force-list always
+
+# squeeze-slashes removes trailing slashes
+zstyle ':completion:*' squeeze-slashes true
+
+# cd will never select the parent directory (e.g.: cd ../<TAB>):
+zstyle ':completion:*:cd:*' ignore-parents parent pwd
+
+export CLICOLOR=1
+export LSCOLORS=ExGxcxdxcxegedabagacad
+
+alias ll='ls -halF'
+alias node-path='export PATH=$PATH:`npm bin`'
+
+alias -s c="$EDITOR"
+alias -s h="$EDITOR"
+alias -s cpp="$EDITOR"
+alias -s log="less -MNR"
+
+alias fn="find . -name"
+alias fni="find . -iname"
+
+function findcode() {
+    local _pattern="$1"
+    local _dir="${2:-.}"
+    local _fname_pattern="${3:-*}"
+
+    if [ -z "$_pattern" ]; then
+        echo "ERROR: missing pattern to match in $_dir for files $_fname_pattern" 1>&2
+        return 1
+    fi
+
+    find "$_dir" -type f -name "$_fname_pattern" ${FIND_OPTS} -print0 | xargs -0 grep --color=auto -E ${GREP_OPTS} -e "$_pattern"
+}
+
+function fh() {
+    findcode "$1" "$2" "${3:-*.h}"
+}
+
+function fc() {
+    findcode "$1" "$2" "${3:-*.c}"
+}
+
+function fcxx() {
+    findcode "$1" "$2" "${3:-*.cpp}"
+}
+
+function fpy() {
+    findcode "$1" "$2" "${3:-*.py}"
+}
+
+function fsh() {
+    findcode "$1" "$2" "${3:-*.sh}"
+}
+
+alias -g all_dirs='*(/)'
+alias -g all_symlinks='*(@)'
+alias -g all_symlinks_broken='*(-@)'
+alias -g all_files='*(.)'
+alias -g all_execs='*(*)'
+alias -g all_files_by_size='*(.oL)'
+alias -g all_execs_by_size='*(*oL)'
+
+# git-diff-branches refrence..other
+alias git-diff-branches='git log --left-right --graph --cherry-pick --oneline'
+
+alias rn-i='react-native run-ios'
+alias rn-a='react-native run-android'
+
+alias py=ipython
+
+function android-emulators() {
+    (cd ~/.android/avd/ && ls -1d *.avd | sed 's:[.]avd$::g')
+}
+
+function android-emulator() {
+    EMULATOR=${1:?Missing emulator name, see android-emulators}
+    (cd $ANDROID_HOME/emulator && ./emulator -avd $EMULATOR &)
+}
+
+# helper to: git reset --hard [branch]
+# defaults to origin/master
+function grst() {
+    local branch=${1:-origin/master}
+    if [[ "$branch" != */* ]]; then
+        branch="origin/$branch"
+    elif [[ "$branch" == local/* ]]; then
+        branch=${branch/local\//}
+    fi
+    git reset --hard "${branch}" &&
+        echo "reseted git to branch $branch" >&2
+}
+
+# test some branch using the local "test" branch
+# helper to: git checkout test && git reset --hard <branch>
+function gtst() {
+    local branch=${1?missing branch to test}
+    if [[ "$branch" != */* ]]; then
+        branch="origin/$branch"
+    elif [[ "$branch" == local/* ]]; then
+        branch=${branch/local\//}
+    fi
+    git checkout test &&
+        git reset --hard "${branch}" &&
+        echo "testing git branch $branch" >&2
+}
+
+# git merge, push & delete
+# gmpd <local-branch> <push-to-master-branch> <remote>
+function gmpd() {
+    local branch=${1?missing branch to merge and delete}
+    local master=${2?missing master branch to merge on}
+    local remote=${3:-origin}
+    if [ -z "$master" -o -z "$remote" -o "$branch" = "$master" ]; then
+        echo "invalid parameters: $*" 1>&2
+        return 1
+    fi
+    git fetch ${remote} &&
+        git checkout ${master} &&
+        git reset --hard ${remote}/${master} &&
+        git merge --ff-only ${branch} &&
+        git push ${remote} &&
+        git push --no-verify ${remote} :${branch} &&
+        git branch -d ${branch}
+}
+
+# gmpd to `master`
+function gmpd-master() {
+    gmpd ${1} master ${2}
+}
+
+# gmpd to `develop`
+function gmpd-develop() {
+    gmpd ${1} develop ${2}
+}
+
+# git fetch, rebase, merge, push & delete
+# grmpd <local-branch> <push-to-master-branch> <remote>
+function grmpd() {
+    local branch=${1?missing branch to merge and delete}
+    local master=${2?missing master branch to merge on}
+    local remote=${3:-origin}
+    if [ -z "$master" -o -z "$remote" -o "$branch" = "$master" ]; then
+        echo "invalid parameters: $*" 1>&2
+        return 1
+    fi
+    git fetch ${remote} &&
+        git checkout ${branch} &&
+        git rebase ${remote}/${master} &&
+        git push --no-verify --force --set-upstream ${remote} ${branch} &&
+        git checkout ${master} &&
+        git reset --hard ${remote}/${master} &&
+        git merge --ff-only ${branch} &&
+        git push ${remote} &&
+        git push --no-verify ${remote} :${branch} &&
+        git branch -d ${branch}
+}
+
+function grmpd-master() {
+    grmpd ${1} master ${2}
+}
+
+function grmpd-develop() {
+    grmpd ${1} develop ${2}
+}
+
+# git remote add github repository handles (user:branch)
+# useful to copy from GitHub web ui
+function gra-github() {
+    local user=${1?missing GitHub user:branch}
+    local branch=${2}
+    if [ -z "$branch" ]; then
+        branch=`echo "$user" | cut -d: -f2`
+        if [ -n "$branch" -a "$branch" != "$user" ]; then
+            user=`echo "$user" | cut -d: -f1`
+        else
+            branch=`echo "$user" | cut -d/ -f2`
+            if [ - "$branch" -a "$branch" != "$user" ]; then
+                user=`echo "$user" | cut -d/ -f1`
+            else
+                branch="master"
+            fi
+        fi
+    fi
+    local origin=`git config --get remote.origin.url`
+    if [ -z "$origin" ]; then
+        echo "ERROR: could not get remote.origin.url" >&2
+        return 1
+    fi
+    local reponame=`basename ${origin} | cut -d. -f1`
+    if [ -z "$reponame" ]; then
+        echo "ERROR: could not find remote reponame from origin" >&2
+        return 1
+    fi
+    git remote add $user git@github.com:${user}/${reponame}.git
+    if ! git fetch $user ${branch}; then
+        echo "ERROR: failed to add repository ${user}/${reponame}, branch ${branch}" >&2
+        git remote rm $user
+        return 1
+    fi
+    echo "added ${user}/${reponame}, check branch ${user}/${branch}"
+}
+
+export NVM_DIR="$HOME/.nvm"
+[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
+[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
