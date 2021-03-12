@@ -42,20 +42,20 @@ static inline void _cws_debug(const char *prefix, const void *buffer, size_t len
 
 static void _cws_sha1(const void *input, const size_t input_len, void *output) {
     static const EVP_MD *md = NULL;
-    EVP_MD_CTX ctx;
+    EVP_MD_CTX *ctx = NULL;
 
     if (!md) {
         OpenSSL_add_all_digests();
         md = EVP_get_digestbyname("sha1");
     }
 
-    EVP_MD_CTX_init(&ctx);
-    EVP_DigestInit_ex(&ctx, md, NULL);
+    ctx = EVP_MD_CTX_create();
+    EVP_DigestInit_ex(ctx, md, NULL);
 
-    EVP_DigestUpdate(&ctx, input, input_len);
-    EVP_DigestFinal_ex(&ctx, output, NULL);
+    EVP_DigestUpdate(ctx, input, input_len);
+    EVP_DigestFinal_ex(ctx, output, NULL);
 
-    EVP_MD_CTX_cleanup(&ctx);
+    EVP_MD_CTX_destroy(ctx);
 }
 
 static void _cws_encode_base64(const uint8_t *input, const size_t input_len, char *output)
