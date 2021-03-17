@@ -172,6 +172,7 @@ struct cws_data {
     } send;
     uint8_t dispatching;
     uint8_t pause_flags;
+    bool redirection;
     bool accepted;
     bool upgraded;
     bool connection_websocket;
@@ -437,6 +438,7 @@ static void _cws_check_connection(struct cws_data *priv, const char *buffer, siz
 }
 
 static size_t _cws_receive_header(const char *buffer, size_t count, size_t nitems, void *data) {
+    long http_status = -1;
     struct cws_data *priv = data;
     size_t len = count * nitems;
     const struct header_checker {
@@ -449,6 +451,16 @@ static size_t _cws_receive_header(const char *buffer, size_t count, size_t nitem
         {"Upgrade:", _cws_check_upgrade},
         {NULL, NULL}
     };
+
+
+    /* If we are being redirected, let curl do that for us. */
+    curl_easy_getinfo(priv->easy, CURLINFO_RESPONSE_CODE, &http_status);
+    if (300 <= http_status && http_status <= 399) {
+        priv->redirection = true;
+        return len;
+    } else {
+        priv->redirection = false;
+    }
 
     if (len == 2 && memcmp(buffer, "\r\n", 2) == 0) {
         long status;
@@ -775,19 +787,28 @@ static size_t _cws_process_frame(struct cws_data *priv, const char *buffer, size
 static size_t _cws_receive_data(const char *buffer, size_t count, size_t nitems, void *data) {
     struct cws_data *priv = data;
     size_t len = count * nitems;
+
+    if (priv->redirection) {
+        return len;
+    }
+
     while (len > 0) {
         size_t used = _cws_process_frame(priv, buffer, len);
         len -= used;
         buffer += used;
     }
 
-    return count * nitems;
+    return len;
 }
 
 static size_t _cws_send_data(char *buffer, size_t count, size_t nitems, void *data) {
     struct cws_data *priv = data;
     size_t len = count * nitems;
     size_t todo = priv->send.len;
+
+    if (priv->redirection) {
+        return len;
+    }
 
     if (todo == 0) {
         priv->pause_flags |= CURLPAUSE_SEND;
