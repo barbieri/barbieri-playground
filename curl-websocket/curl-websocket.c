@@ -798,7 +798,7 @@ static size_t _cws_receive_data(const char *buffer, size_t count, size_t nitems,
         buffer += used;
     }
 
-    return len;
+    return count * nitems;
 }
 
 static size_t _cws_send_data(char *buffer, size_t count, size_t nitems, void *data) {
