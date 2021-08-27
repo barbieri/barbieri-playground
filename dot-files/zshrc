@@ -1,7 +1,4 @@
 # If you come from bash you might have to change your $PATH.
-export NPM_PACKAGES="${HOME}/.npm-packages"
-export PATH=$HOME/bin:$NPM_PACKAGES/bin:/usr/local/bin:$PATH
-
 export LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8
 export EDITOR="$HOME/bin/emacs"
 export ANDROID_HOME=$HOME/Library/Android/sdk
@@ -10,15 +7,7 @@ export PATH=$PATH:$ANDROID_HOME/platform-tools
 
 export PIPENV_VENV_IN_PROJECT=1
 
-export PYENV_ROOT="$HOME/.pyenv"
-export FLUTTER_ROOT="$HOME/Development/sdk/flutter"
-export PATH="$PYENV_ROOT/bin:$FLUTTER_ROOT/bin:$PATH"
-
 eval "$(pyenv init -)"
-
-# Unset manpath so we can inherit from /etc/manpath via the `manpath` command
-unset MANPATH # delete if you already modified MANPATH elsewhere in your config
-export MANPATH="$NPM_PACKAGES/share/man:$(manpath)"
 
 HISTFILE=~/.histfile
 HISTSIZE=10000
@@ -301,5 +290,14 @@ function gra-github() {
 }
 
 export NVM_DIR="$HOME/.nvm"
-[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"  # This loads nvm
-[ -s "$NVM_DIR/bash_completion" ] && \. "$NVM_DIR/bash_completion"  # This loads nvm bash_completion
+NVM_INSTALL_DIR=$HOMEBREW_PREFIX/opt/nvm
+if [ -d $NVM_INSTALL_DIR ]; then
+    if [ -s "$NVM_INSTALL_DIR/nvm.sh" ]; then
+        source "$NVM_INSTALL_DIR/nvm.sh"  # This loads nvm
+    fi
+    if [ -s "$NVM_INSTALL_DIR/etc/bash_completion.d/nvm" ]; then
+        source "$NVM_INSTALL_DIR/etc/bash_completion.d/nvm"  # This loads nvm bash_completion
+    fi
+fi
+
+export PATH="$HOME/bin:$PATH"
