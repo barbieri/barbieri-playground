@@ -14,7 +14,15 @@
 
 local ret_status="%(?:%{$fg_bold[green]%}✔:%{$fg_bold[red]%}✗)"
 
-PROMPT='${ret_status}%T$(_user_host) %{$fg_bold[blue]%}$(_current_dir)%{$resetcolor%}$(_extra_prompt)
+local EMULATED=""
+if [ `uname -s` = 'Darwin' ]; then
+    local IS_ARM=`sysctl -n hw.optional.arm64 2>/dev/null || echo 0`
+    if [ $IS_ARM -eq 1 ] && [ `uname -m` = 'x86_64' ]; then
+        EMULATED="🌹"
+    fi
+fi
+
+PROMPT='${EMULATED}${ret_status}%T$(_user_host) %{$fg_bold[blue]%}$(_current_dir)%{$resetcolor%}$(_extra_prompt)
 %{$fg[$CARETCOLOR]%}%(!.#.$)%{$resetcolor%} '
 
 function _extra_prompt() {
