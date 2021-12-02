@@ -378,11 +378,10 @@ end
 
 function Device:disconnect_sta(sta)
    local endpoint = "hostapd." .. self.ifname
-   conn:call(endpoint, "del_client", {
+   conn:call(endpoint, "wnm_disassoc_imminent", {
                 addr = sta.addr,
-                reason = self.drop_reason,
-                deauth = false,
-                ban_time = 0,
+                duration = 120,
+                abridged = true,
    })
    inf("%s: disconnected %s", self.ifname, tostring(sta))
 end
