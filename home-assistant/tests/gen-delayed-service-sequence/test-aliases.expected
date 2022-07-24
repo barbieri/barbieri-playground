@@ -1,0 +1,37 @@
+alias: Sequence (2m 10s)
+mode: single
+sequence:
+- alias: 0:00:00 turn on switch.light1 (1m)
+  service: switch.turn_on
+  target:
+    entity_id: switch.light1
+- alias: 0:00:00 keep on switch.light1 (1m)
+  delay: 0:01:00
+- alias: 0:01:00 turn on switch.light2 (1m)
+  service: switch.turn_on
+  target:
+    entity_id: switch.light2
+- alias: 0:01:00 overlap switch.light1 (5s)
+  delay: 0:00:05
+- alias: 0:01:05 turn off switch.light1 (1m)
+  service: switch.turn_off
+  target:
+    entity_id: switch.light1
+- alias: 0:01:05 keep on switch.light2 (1m)
+  delay: 0:01:00
+- alias: Custom Alias (0:00:00)
+  service: switch.turn_on
+  target:
+    entity_id: switch.light3
+- alias: 0:02:05 overlap switch.light2 (5s)
+  delay: 0:00:05
+- alias: 0:02:10 turn off switch.light2 (1m)
+  service: switch.turn_off
+  target:
+    entity_id: switch.light2
+- alias: Custom Alias (0:00:00)
+  delay: 0:00:00
+- alias: Custom Alias (0:00:00)
+  service: switch.turn_off
+  target:
+    entity_id: switch.light3
