@@ -241,6 +241,20 @@ openwrt$ opkg install lua libiwinfo-lua libubus-lua luci-lib-nixio libuci-lua
 
 openwrt$ chmod +x /usr/bin/wifi-disconnect-low-signal.lua
 openwrt$ chmod +x /etc/init.d/wifi-disconnect-low-signal
+```
+
+Optionally, add a `wifi-disconnect-low-signal` section to
+`/etc/config/wireless`, and set values for `verbosity` and/or `stderr`:
+
+```
+config wifi-disconnect-low-signal
+	option verbosity '2'  # `-v -v`
+	option stderr 'yes'   # `--stderr`
+```
+
+Then, enable and start the daemon:
+
+```shell-session
 openwrt$ /etc/init.d/wifi-disconnect-low-signal enable
 openwrt$ /etc/init.d/wifi-disconnect-low-signal start
 ```
