@@ -16,15 +16,35 @@ local loglevel = 0
 local loglevels = {"info", "debug"}
 local loglevel_enabled = {}
 
+local function convert_signal_overflow(info)
+   if info.signal > 0 then
+      return -128 - (127 - info.signal)
+   else
+      return info.signal
+   end
+end
+
+local function convert_signal_snr(info)
+   return info.signal + info.noise
+end
+
+local convert_signal = convert_signal_overflow
+
 -- cmdline arguments:
 --  * --stderr: print log to stderr as well as syslog
 --  * -v --verbose: increase verbosity
+--  * --positive-signal-is-overflow: treat reported positive signal as 8-bit overflow
+--  * --signal-is-snr: treat reported signal as SNR
 for i, a in ipairs(arg) do
    if i > 0 then
       if a == "--stderr" then
          openlog_args[#openlog_args + 1] = "perror"
       elseif a == "-v" or a == "--verbose" then
          loglevel = loglevel + 1
+      elseif a == "--positive-signal-is-overflow" then
+         convert_signal = convert_signal_overflow
+      elseif a == "--signal-is-snr" then
+         convert_signal = convert_signal_snr
       end
    end
 end
@@ -73,7 +93,7 @@ end
 local STA = {}
 STA.__index = STA
 
-function STA.new(addr)
+function STA.new(addr, convert_signal)
    local self = setmetatable({}, STA)
    self.addr = addr
    self.subject = addr:gsub(":", ""):upper()
@@ -83,6 +103,11 @@ function STA.new(addr)
    self.is_new = true
    self.disconnected_at = nil
    self.gone_at = nil
+
+   function self:convert_signal(info)
+      return convert_signal(info)
+   end
+
    return self
 end
 
@@ -120,10 +145,7 @@ function STA:__tostring()
 end
 
 function STA:update(info)
-   self.signal = info.signal
-   if self.signal > 0 then
-      self.signal = -128 - (127 - self.signal)
-   end
+   self.signal = self:convert_signal(info)
    self.noise = info.noise
    self.snr = self.signal - self.noise
 end
@@ -193,9 +215,10 @@ Device.conf_options = {
    drop_reason = DeviceOpt("signal_drop_reason", tonumber, 3),
    whitelist = DeviceOpt("signal_whitelist", prefix_list_matcher, nil),
    blacklist = DeviceOpt("signal_blacklist", prefix_list_matcher, nil),
+   radio = DeviceOpt("device", tostring, nil),
 }
 
-function Device.new(ifname, conf_section)
+function Device.new(ifname, conf_section, radio)
    local self = setmetatable({}, Device)
    self.ifname = ifname
    local api = iwinfo.type(self.ifname)
@@ -204,6 +227,27 @@ function Device.new(ifname, conf_section)
    for key, opt in pairs(Device.conf_options) do
       local conf = cursor:get("wireless", conf_section, opt.name)
       self[key] = opt.type(conf) or opt.default
+   end
+
+   if self.radio == nil then
+      self.radio = radio
+   end
+
+   self.signal_convert = cursor:get("wireless", self.radio, "signal_convert")
+
+   if self.signal_convert == "snr" then
+      self.convert_signal = convert_signal_snr
+   elseif self.signal_convert == "overflow" then
+      self.convert_signal = convert_signal_overflow
+   else
+      if self.signal_convert ~= nil then
+         inf("%s: unrecognized signal conversion method '%s' for radio '%s'; using default conversion method",
+            self.ifname,
+            self.signal_convert,
+            self.radio)
+      end
+
+      self.convert_signal = convert_signal
    end
 
    self.stas = {} -- addr -> STA
@@ -244,7 +288,7 @@ function Device:get_sta(addr)
    local sta = self.stas[addr]
 
    if sta == nil then
-      sta = STA.new(addr)
+      sta = STA.new(addr, convert_signal)
 
       if self.whitelist ~= nil and not sta:matches(self.whitelist) then
          dbg("%s: ignored %s (whitelist)", self.ifname, addr)
@@ -396,7 +440,7 @@ function get_wifi_devices()
       else
          for _, iface in ipairs(radio.interfaces) do
             if iface.config.mode == "ap" then
-               local dev = Device.new(iface.ifname, iface.section)
+               local dev = Device.new(iface.ifname, iface.section, radio)
                if dev ~= nil then
                   devices[#devices + 1] = dev
                   dbg("%s: %s", name, tostring(dev))
