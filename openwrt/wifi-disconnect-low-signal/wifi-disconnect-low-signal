@@ -54,7 +54,6 @@ start_wifi_disconnect_low_signal() {
 		procd_append_param command --stderr
 	fi
 
-        procd_set_param file "/etc/config/${PACKAGE}"
 	procd_set_param respawn "${respawn_threshold:-3600}" "${respawn_timeout:-5}" "${respawn_retry:-5}"
 	procd_close_instance
 }
@@ -72,5 +71,6 @@ reload_service() {
 }
 
 service_triggers() {
+	procd_add_reload_trigger "$PACKAGE"
 	procd_add_validation validate_wifi_disconnect_low_signal_section
 }
