@@ -12,11 +12,14 @@ VERBOSITY=""
 VERBOSITY_DEFAULT=0
 STDERR=""
 STDERR_DEFAULT=0
+SIGNAL_CONVERT=""
+SIGNAL_CONVERT_DEFAULT=overflow
 
 validate_wifi_disconnect_low_signal_section() {
 	uci_load_validate "$PACKAGE" "$TYPE" "$1" "$2" \
 		"verbosity:range(0,3)" \
-		"stderr:bool"
+		"stderr:bool" \
+		"signal_convert:or(\"overflow\",\"snr\")"
 }
 
 # This function runs for each `config wifi-disconnect-low-signal` section that
@@ -35,11 +38,16 @@ configure_wifi_disconnect_low_signal() {
 	if [ -n "$stderr" ]; then
 		STDERR="$stderr"
 	fi
+
+	if [ -n "$signal_convert" ]; then
+		SIGNAL_CONVERT="$signal_convert"
+	fi
 }
 
 start_wifi_disconnect_low_signal() {
 	VERBOSITY="${VERBOSITY:-${VERBOSITY_DEFAULT}}"
 	STDERR="${STDERR:-${STDERR_DEFAULT}}"
+	SIGNAL_CONVERT="${SIGNAL_CONVERT:-${SIGNAL_CONVERT_DEFAULT}}"
 
 	procd_open_instance
 	procd_set_param command "$PROG"
@@ -53,6 +61,15 @@ start_wifi_disconnect_low_signal() {
 	if [ "$STDERR" != 0 ]; then
 		procd_append_param command --stderr
 	fi
+
+	case "$SIGNAL_CONVERT" in
+		overflow)
+			procd_append_param command --positive-signal-is-overflow
+			;;
+		snr)
+			procd_append_param command --signal-is-snr
+			;;
+	esac
 
 	procd_set_param respawn "${respawn_threshold:-3600}" "${respawn_timeout:-5}" "${respawn_retry:-5}"
 	procd_close_instance

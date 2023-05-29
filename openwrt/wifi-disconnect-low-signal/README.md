@@ -225,6 +225,56 @@ also log to stderr in addition to syslog:
  $ lua wifi-disconnect-low-signal.lua -v -v --stderr # debug and stderr
 ```
 
+## Handling misreported signal values
+
+Sometimes, wifi devices report positive signal values for connected stations
+(for example, see [this report](https://github.com/barbieri/barbieri-playground/pull/7)).
+By default, `wifi-disconnect-low-signal` treats such values as representing
+overflows of an 8-bit data type and converts them using the expression
+`-128 - (127 - <signal>)`.  For instance, `wifi-disconnect-low-signal` treats a
+reported signal of `25` as the "real" signal `-230`.
+
+`wifi-disconnect-low-signal` optionally supports treating signal values as
+representing the Signal-Noise-Ratio -- that is, if the reported signal is `25`
+and the reported noise is `-90`, then `wifi-disconnect-low-signal` will use
+`-65` as the "real" signal.  To enable this behavior, use the `--signal-is-snr`
+flag:
+
+```shell-session
+ $ lua wifi-disconnect-low-signal.lua --signal-is-snr
+```
+
+You may also force the default positive signal conversion behavior by using the
+`--positive-signal-is-overflow` flag:
+
+```shell-session
+ $ lua wifi-disconnect-low-signal.lua --positive-signal-is-overflow
+```
+
+You can also specify the conversion method in the `wifi-disconnect-low-signal`
+section of `/etc/config/wireless`:
+
+```
+config wifi-disconnect-low-signal
+	option signal_convert 'snr' # or 'overflow'
+```
+
+Note that this option is only respected when [running
+`wifi-disconnect-low-signal` as a service](#running-as-a-openwrt-service).
+
+Finally, you may specify the conversion method on a per-radio basis in
+`/etc/config/wireless`:
+
+```
+config wifi-device 'radio1'
+	# ...
+	option signal_convert 'snr'
+	# ...
+```
+
+This option takes precedence over the conversion method specified via the `CLI`
+or in the `wifi-disconnect-low-signal` section.
+
 ## Running as a OpenWRT service
 
 Copy `wifi-disconnect-low-signal.lua` to `/usr/bin` and make it
@@ -244,12 +294,16 @@ openwrt$ chmod +x /etc/init.d/wifi-disconnect-low-signal
 ```
 
 Optionally, add a `wifi-disconnect-low-signal` section to
-`/etc/config/wireless`, and set values for `verbosity` and/or `stderr`:
+`/etc/config/wireless`, and set values for `verbosity`,`stderr`, and/or
+`signal_convert`:
 
 ```
 config wifi-disconnect-low-signal
-	option verbosity '2'  # `-v -v`
-	option stderr 'yes'   # `--stderr`
+	option verbosity '2'		    # `-v -v`
+	option stderr 'yes'   		    # `--stderr`
+	option signal_convert 'snr'	    # `--signal-is-snr`
+	# Or:
+	option signal_convert 'overflow'    # `--positive-signal-is-overflow`
 ```
 
 Then, enable and start the daemon:
