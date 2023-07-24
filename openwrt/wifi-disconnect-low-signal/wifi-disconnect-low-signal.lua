@@ -288,7 +288,7 @@ function Device:get_sta(addr)
    local sta = self.stas[addr]
 
    if sta == nil then
-      sta = STA.new(addr, convert_signal)
+      sta = STA.new(addr, self.convert_signal)
 
       if self.whitelist ~= nil and not sta:matches(self.whitelist) then
          dbg("%s: ignored %s (whitelist)", self.ifname, addr)
