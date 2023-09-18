@@ -159,6 +159,11 @@ function gmpd() {
         git branch -d ${branch}
 }
 
+# gmpd to `main`
+function gmpd-main() {
+    gmpd ${1} main ${2}
+}
+
 # gmpd to `master`
 function gmpd-master() {
     gmpd ${1} master ${2}
