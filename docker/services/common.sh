@@ -50,8 +50,11 @@ backup_internal() {
     docker commit -m "Backup at $TIMESTAMP" $SVC "$SVC:save-$TIMESTAMP"
     mkdir -p "$BKP"
     echo "Saving Volume $VOL as $BKP_FILE ..."
+    set -xe
     docker run --rm -v $VOL:$MNT busybox sh -c \
-           "tar -cf - '$MNT'" | xz -zc9 > $BKP_FILE
+           "tar -cf - '$MNT'" > "$BKP/$BKP_NAME.tar"
+    xz -9v "$BKP/$BKP_NAME.tar"
+    ls -l "$BKP_FILE"
 }
 
 backup() {
