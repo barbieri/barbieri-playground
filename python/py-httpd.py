@@ -1,5 +1,7 @@
 #!/usr/bin/python3
 
+import argparse
+import os
 from hashlib import md5, file_digest
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler
@@ -46,6 +48,7 @@ class SimpleETagHTTPRequestHandler(SimpleHTTPRequestHandler):
 
 class StoppableHTTPServer(ThreadingHTTPServer):
     run = True
+    directory = None
 
     def handle_request(self):
         try:
@@ -58,8 +61,45 @@ class StoppableHTTPServer(ThreadingHTTPServer):
         while self.run:
             self.handle_request()
 
+    def finish_request(self, request, client_address):
+        self.RequestHandlerClass(
+            request, client_address, self, directory=self.directory,
+        )
 
-httpd = StoppableHTTPServer(("", 8000), SimpleETagHTTPRequestHandler)
-sa = httpd.socket.getsockname()
-print("Serving HTTP on", sa[0], "port", sa[1], "...")
-httpd.serve_forever()
+
+if __name__ == "__main__":
+    ap = argparse.ArgumentParser(
+        description=(
+            "Serve local files over HTTP, "
+            "supports If-Modified-Since and If-None-Match conditions"
+        ),
+    )
+    ap.add_argument(
+        "--address",
+        help="Internet address to serve on, defaults to all",
+        default="",
+    )
+    ap.add_argument(
+        "--port",
+        help="Port to listen on, default=%(default)s",
+        type=int,
+        default=8000,
+    )
+    ap.add_argument(
+        "--directory",
+        help="serve this directory (default: current directory)",
+        default=os.getcwd(),
+    )
+
+    args = ap.parse_args()
+
+    httpd = StoppableHTTPServer(
+        (args.address, args.port),
+        SimpleETagHTTPRequestHandler,
+    )
+    httpd.directory = args.directory
+    sa = httpd.socket.getsockname()
+    print(
+        f"Serving directory {httpd.directory} HTTP on {sa[0]} port {sa[1]}..."
+    )
+    httpd.serve_forever()
