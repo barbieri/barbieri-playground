@@ -16,7 +16,10 @@
     "build:cjs": "yarn build:esbuild --format=cjs --drop-labels=ESM --outfile=docker-entrypoint.min.js",
     "build:esm": "yarn build:esbuild --format=esm --drop-labels=CJS --outfile=docker-entrypoint.mjs",
     "build:tsc": "tsc -p tsconfig.json",
-    "build": "run-p build:cjs build:esm build:tsc"
+    "build": "run-p build:cjs build:esm build:tsc",
+    "docker:build": "docker build --tag docker-entrypoint-example .",
+    "docker:run": "docker run --rm -it docker-entrypoint-example",
+    "docker": "run-s docker:build docker:run"
   },
   "devDependencies": {
     "@tsconfig/node20": "^20.1.4",
