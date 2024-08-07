@@ -1,0 +1,28 @@
+{
+  "name": "distroless-docker-entrypoint",
+  "version": "1.0.0",
+  "description": "Docker entrypoint to use gcr.io/distroless/nodejs as base",
+  "main": "docker-entrypoint.js",
+  "repository": "https://github.com/barbieri/barbieri-playground/tree/master/docker/distroless/nodejs",
+  "author": "Gustavo Sverzut Barbieri <barbieri@profusion.mobi>",
+  "license": "MIT",
+  "exports": {
+    "require": "./docker-entrypoint.min.js",
+    "import": "./docker-entrypoint.mjs",
+    "types": "./docker-entrypoint.d.ts"
+  },
+  "scripts": {
+    "build:esbuild": "esbuild --bundle --minify --platform=node --target=node20 docker-entrypoint.ts",
+    "build:cjs": "yarn build:esbuild --format=cjs --drop-labels=ESM --outfile=docker-entrypoint.min.js",
+    "build:esm": "yarn build:esbuild --format=esm --drop-labels=CJS --outfile=docker-entrypoint.mjs",
+    "build:tsc": "tsc -p tsconfig.json",
+    "build": "run-p build:cjs build:esm build:tsc"
+  },
+  "devDependencies": {
+    "@tsconfig/node20": "^20.1.4",
+    "@types/node": "20",
+    "esbuild": "^0.23.0",
+    "npm-run-all": "^4.1.5",
+    "typescript": "^5.5.4"
+  }
+}
