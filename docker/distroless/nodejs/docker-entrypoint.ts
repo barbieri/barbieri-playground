@@ -29,6 +29,9 @@
  * See https://github.com/GoogleContainerTools/distroless/blob/main/nodejs/README.md
  */
 /* eslint-disable no-magic-numbers */
+/* eslint-disable no-labels */
+/* eslint-disable no-unused-labels */
+/* eslint-disable no-restricted-syntax */
 
 import child_process from 'child_process';
 import fs from 'fs';

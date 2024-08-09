@@ -30,6 +30,9 @@
  * See https://github.com/GoogleContainerTools/distroless/blob/main/nodejs/README.md
  */
 /* eslint-disable no-magic-numbers */
+/* eslint-disable no-labels */
+/* eslint-disable no-unused-labels */
+/* eslint-disable no-restricted-syntax */
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.waitServer = void 0;
 exports.die = die;
