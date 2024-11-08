@@ -3,7 +3,8 @@ export LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8
 export EDITOR="$HOME/bin/emacs"
 export ANDROID_HOME=$HOME/Library/Android/sdk
 export JAVA_HOME="/Applications/Android Studio.app/Contents/jre/Contents/Home"
-export PATH="$JAVA_HOME/bin:$PATH:$ANDROID_HOME/tools:$ANDROID_HOME/tools/bin:$ANDROID_HOME/emulator:$ANDROID_HOME/platform-tools"
+export HOMEBREW_PREFIX=/opt/homebrew
+export PATH="$HOMEBREW_PREFIX/bin:$JAVA_HOME/bin:$PATH:$ANDROID_HOME/tools:$ANDROID_HOME/tools/bin:$ANDROID_HOME/emulator:$ANDROID_HOME/platform-tools"
 
 export PIPENV_VENV_IN_PROJECT=1
 
