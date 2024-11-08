@@ -66,7 +66,7 @@ const waitServer = (connectOpts, { interval = waitServerDefaultOptions.interval,
     const connParts = [host, port].concat(Object.entries(restConnectOpts).map(([k, v]) => `${k}=${JSON.stringify(v)}`));
     const connStr = `${connParts.join(':')}:`;
     function tryServer() {
-        log(`${connStr} connected to server!`);
+        log(`${connStr} connecting to server!`);
         const client = net_1.default.createConnection(connectOpts, () => {
             log(`${connStr} connected to server!`);
             client.end();

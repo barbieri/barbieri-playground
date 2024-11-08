@@ -82,7 +82,7 @@ export const waitServer = (
     const connStr = `${connParts.join(':')}:`;
 
     function tryServer(): void {
-      log(`${connStr} connected to server!`);
+      log(`${connStr} connecting to server!`);
       const client = net.createConnection(connectOpts, () => {
         log(`${connStr} connected to server!`);
         client.end();
