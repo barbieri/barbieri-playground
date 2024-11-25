@@ -1,7 +1,9 @@
 #!/usr/bin/python3
 
 import argparse
+import email.utils
 import os
+import time
 from hashlib import md5, file_digest
 from http import HTTPStatus
 from http.server import SimpleHTTPRequestHandler
@@ -20,6 +22,12 @@ class SimpleETagHTTPRequestHandler(SimpleHTTPRequestHandler):
         if keyword == "Last-Modified":
             etag = self._gen_etag()
             super().send_header("ETag", etag)
+
+            expires_in = getattr(self.server, "expires_in", None)
+            if isinstance(expires_in, (float, int)) and expires_in > 0:
+                timestamp = time.time() + expires_in
+                expires = email.utils.formatdate(timestamp, usegmt=True)
+                super().send_header("Expires", expires)
 
     def send_head(self) -> BytesIO | BinaryIO | None:
         if condition := self.headers.get("If-None-Match"):
@@ -90,6 +98,15 @@ if __name__ == "__main__":
         help="serve this directory (default: current directory)",
         default=os.getcwd(),
     )
+    ap.add_argument(
+        '--expires-in',
+        help=(
+            "send 'Expires' header of this amount of seconds in the future. "
+            "Use <= 0 to disable. Default to %(default)s"
+        ),
+        type=float,
+        default=0,
+    )
 
     args = ap.parse_args()
 
@@ -98,6 +115,7 @@ if __name__ == "__main__":
         SimpleETagHTTPRequestHandler,
     )
     httpd.directory = args.directory
+    httpd.expires_in = args.expires_in
     sa = httpd.socket.getsockname()
     print(
         f"Serving directory {httpd.directory} HTTP on {sa[0]} port {sa[1]}..."
