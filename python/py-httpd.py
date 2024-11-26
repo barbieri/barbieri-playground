@@ -13,22 +13,6 @@ from typing import BinaryIO
 
 
 class SimpleETagHTTPRequestHandler(SimpleHTTPRequestHandler):
-    # NOTE: overriding send_header() is an ugly hack!
-    # but SimpleHTTPRequestHandler wasn't meant to be extended
-    # and there is no other hook we could use to populate extra
-    # headers before the end of headers
-    def send_header(self, keyword: str, value: str) -> None:
-        super().send_header(keyword, value)
-        if keyword == "Last-Modified":
-            etag = self._gen_etag()
-            super().send_header("ETag", etag)
-
-            expires_in = getattr(self.server, "expires_in", None)
-            if isinstance(expires_in, (float, int)) and expires_in > 0:
-                timestamp = time.time() + expires_in
-                expires = email.utils.formatdate(timestamp, usegmt=True)
-                super().send_header("Expires", expires)
-
     def send_head(self) -> BytesIO | BinaryIO | None:
         if condition := self.headers.get("If-None-Match"):
             etag = self._gen_etag()
@@ -37,6 +21,22 @@ class SimpleETagHTTPRequestHandler(SimpleHTTPRequestHandler):
                 self.end_headers()
 
         return super().send_head()
+
+    def end_headers(self):
+        if etag := self._gen_etag():
+            self.send_header("ETag", etag)
+
+        expires_in = getattr(self.server, "expires_in", None)
+        if isinstance(expires_in, (float, int)) and expires_in > 0:
+            timestamp = time.time() + expires_in
+            expires = email.utils.formatdate(timestamp, usegmt=True)
+            self.send_header("Expires", expires)
+
+        if extra_headers := getattr(self.server, "extra_headers"):
+            for k, v in extra_headers:
+                self.send_header(k, v)
+
+        return super().end_headers()
 
     _etag = None
 
@@ -57,6 +57,8 @@ class SimpleETagHTTPRequestHandler(SimpleHTTPRequestHandler):
 class StoppableHTTPServer(ThreadingHTTPServer):
     run = True
     directory = None
+    expires_in = None
+    extra_headers = None
 
     def handle_request(self):
         try:
@@ -107,6 +109,14 @@ if __name__ == "__main__":
         type=float,
         default=0,
     )
+    ap.add_argument(
+        '-H', '--header',
+        help='Extra headers to send in "Header: Value" form',
+        type=lambda v: tuple(map(lambda x: x.strip(), v.split(':', 1))),
+        default=[],
+        action='append',
+        dest='extra_headers',
+    )
 
     args = ap.parse_args()
 
@@ -116,6 +126,7 @@ if __name__ == "__main__":
     )
     httpd.directory = args.directory
     httpd.expires_in = args.expires_in
+    httpd.extra_headers = args.extra_headers
     sa = httpd.socket.getsockname()
     print(
         f"Serving directory {httpd.directory} HTTP on {sa[0]} port {sa[1]}..."
