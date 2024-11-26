@@ -13,6 +13,9 @@ from typing import BinaryIO
 
 
 class SimpleETagHTTPRequestHandler(SimpleHTTPRequestHandler):
+    def do_OPTIONS(self):
+        self.do_HEAD()
+
     def send_head(self) -> BytesIO | BinaryIO | None:
         if condition := self.headers.get("If-None-Match"):
             etag = self._gen_etag()
