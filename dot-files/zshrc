@@ -70,7 +70,7 @@ HYPHEN_INSENSITIVE="true"
 # Custom plugins may be added to ~/.oh-my-zsh/custom/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
 # Add wisely, as too many plugins slow down shell startup.
-plugins=(git history-substring-search colorize safe-paste urltools virtualenv)
+plugins=(git history-substring-search colorize safe-paste urltools virtualenv yarn npm nvm pyenv rbenv docker docker-compose aws)
 
 source $ZSH/oh-my-zsh.sh
 
@@ -252,5 +252,7 @@ if [ -d $NVM_INSTALL_DIR ]; then
         source "$NVM_INSTALL_DIR/etc/bash_completion.d/nvm"  # This loads nvm bash_completion
     fi
 fi
+
+eval "$(codex completion zsh)"
 
 export PATH="$HOME/bin:$PATH"
