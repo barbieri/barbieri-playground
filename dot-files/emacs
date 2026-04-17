@@ -1,320 +1,358 @@
-; -*- mode: lisp -*-
+;;; -*- mode: emacs-lisp -*-
+;;; -*- lexical-binding: t -*-
+
+(when (memq window-system '(mac ns))
+  (exec-path-from-shell-initialize)) ;; get $PATH from $SHELL command
+
+(set-window-fringes nil 20 0)
+(setq initial-frame-alist '((width . 120) (height . 60)))
+
+(server-start)
 
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(auto-compression-mode t nil (jka-compr))
  '(blink-cursor-mode nil)
- '(c-default-style
-   (quote
-    ((c-mode . "cc-mode")
-     (java-mode . "java")
-     (other . "gnu"))))
- '(case-fold-search t)
  '(column-number-mode t)
- '(cscope-database-file "/home/gustavo/Development/cscope.out")
- '(current-language-environment "UTF-8")
- '(default-input-method "rfc1345")
- '(global-font-lock-mode t nil (font-lock))
- '(indent-tabs-mode nil)
+ '(custom-enabled-themes '(sanityinc-tomorrow-night))
+ '(custom-safe-themes
+   '("76ddb2e196c6ba8f380c23d169cf2c8f561fd2013ad54b987c516d3cabc00216"
+     "6fc9e40b4375d9d8d0d9521505849ab4d04220ed470db0b78b700230da0a86c1"
+     default))
+ '(doom-modeline-buffer-encoding 'nondefault)
+ '(doom-modeline-percent-position nil)
+ '(enable-recursive-minibuffers t)
+ '(flymake-mode-line-lighter "FM")
+ '(global-highlight-parentheses-mode t)
+ '(global-hl-line-mode t)
  '(indicate-empty-lines t)
  '(inhibit-startup-screen t)
- '(ispell-program-name "aspell")
- '(iswitchb-mode t)
+ '(initial-major-mode 'markdown-mode)
+ '(initial-scratch-message nil)
  '(menu-bar-mode nil)
- '(mouse-wheel-mode t nil (mwheel))
- '(require-final-newline t)
- '(safe-local-variable-values
-   (quote
-    ((encoding . utf-8)
-     (todo-categories "Personal")
-     (todo-categories "Personal"))))
- '(save-place t nil (saveplace))
+ '(package-archives
+   '(("gnu" . "https://elpa.gnu.org/packages/")
+     ("nongnu" . "https://elpa.nongnu.org/nongnu/")
+     ("melpa" . "https://melpa.org/packages/")))
+ '(package-selected-packages
+   '(agent-shell agent-shell-macext color-theme-sanityinc-tomorrow
+		 company counsel counsel-projectile counsel-test
+		 diff-hl diminish doom-modeline exec-path-from-shell
+		 highlight-parentheses jinx jtsx lsp-ivy lsp-mode
+		 lsp-ui magit multiple-cursors projectile
+		 projectile-git-autofetch vterm))
+ '(package-vc-selected-packages
+   '((agent-shell-macext :url "https://github.com/cxa/agent-shell-macext")))
+ '(require-final-newline 'ask)
  '(scroll-bar-mode nil)
- '(semanticdb-default-system-save-directory "/home/gustavo/.semantic.db" t)
- '(show-paren-mode t nil (paren))
+ '(show-paren-context-when-offscreen 'overlay)
+ '(show-paren-style 'expression)
  '(show-trailing-whitespace t)
- '(sort-fold-case t t)
- '(speedbar-frame-parameters
-   (quote
-    ((minibuffer)
-     (width . 20)
-     (border-width . 0)
-     (menu-bar-lines . 0)
-     (tool-bar-lines . 0)
-     (unsplittable . t)
-     (set-background-color "black"))))
- '(tab-width 8)
- '(tool-bar-mode nil nil (tool-bar))
- '(transient-mark-mode t)
- '(uniquify-buffer-name-style (quote forward) nil (uniquify))
- '(version-control nil)
- '(x-stretch-cursor t))
+ '(tool-bar-mode nil)
+ '(use-dialog-box nil))
+
+(use-package color-theme-sanityinc-tomorrow
+  :ensure t)
+
+(use-package highlight-parentheses
+  :ensure t
+  :config
+  (setopt highlight-parentheses-colors
+	  '("cyan" "lightblue" "yellow" "orange" "red" "magenta" "purple"))
+  (add-hook 'minibuffer-setup-hook #'highlight-parentheses-minibuffer-setup))
+
+(use-package magit
+  :ensure t
+  :bind ("C-x g" . magit-status)
+  :config
+  (setq magit-display-buffer-function 'magit-display-buffer-same-window-except-diff-v1))
+
+(use-package diff-hl
+  :ensure t
+  :hook ((magit-post-refresh-hook . diff-hl-magit-post-refresh)
+	 (magit-pre-refresh-hook . diff-hl-magit-pre-refresh)
+	 (dired-mode-hook . diff-hl-dired-mode))
+  :config
+  (global-diff-hl-mode)
+  (diff-hl-flydiff-mode 1))
+
+(use-package jinx ;; spell checker
+  :ensure t
+  :config
+  (setopt jinx-camel-modes
+	  '(java-mode java-ts-mode js-mode js-ts-mode ruby-mode ruby-ts-mode
+		      rust-mode rust-ts-mode haskell-mode kotlin-mode
+		      swift-mode csharp-mode csharp-ts-mode objc-mode
+		      typescript-ts-mode typescript-mode tsx-ts-mode
+		      python-mode python-ts-mode dart-mode go-mode go-ts-mode
+		      scala-mode groovy-mode jtsx-jsx-mode jtsx-tsx-mode
+		      jtsx-typescript-mode))
+  (setopt jinx-languages "en_US pt_BR")
+  :hook (emacs-startup . global-jinx-mode)
+  :bind (("M-$" . jinx-correct)
+         ("C-M-$" . jinx-languages)))
+
+(use-package lsp-mode
+  :ensure t
+  :init
+  (setq gc-cons-threshold (* 256 1024 1024)) ;; needs lots of memory, 256mb
+  (setq read-process-output-max (* 4 1024 1024)) ;; 4mb
+  (setq lsp-modeline-diagnostics-scope :workspace)
+  (setopt lsp-eslint-provide-lint-task t)
+  (setopt lsp-eslint-server-command '("vscode-eslint-language-server" "--stdio"))
+  (setopt lsp-file-watch-threshold 5000)
+  (setopt lsp-markdown-server-command "vscode-markdown-language-server")
+  (setopt lsp-ui-doc-show-with-cursor t)
+  (setopt lsp-warn-no-matched-clients nil)
+  :hook ((prog-mode-hook . lsp)
+	 (markdown-mode . lsp)
+	 (json-mode . lsp)
+         (lsp-mode . lsp-enable-which-key-integration))
+  :commands (lsp lsp-deferred))
+
+(use-package lsp-ui
+  :ensure t
+  :config
+  (setopt lsp-ui-doc-show-with-mouse t)
+  :commands lsp-ui-mode lsp-ui-doc-mode)
+
+; (use-package helm-lsp
+;  :ensure t
+;  :commands helm-lsp-workspace-symbol)
+
+(use-package lsp-ivy
+  :ensure t
+  :commands lsp-ivy-workspace-symbol)
+
+;(use-package lsp-treemacs :commands lsp-treemacs-errors-list)
+
+;; (use-package diminish ;; remove stuff from modeline
+;;   :ensure t
+;;   :init
+;;   (diminish 'abbrev-mode)
+;;   (diminish 'eldoc-mode)
+;;   (diminish 'company-mode)
+;;   (diminish 'highlight-parentheses-mode)
+;;   (diminish 'jinx-mode)
+;;   (diminish 'lsp-mode)
+;;   (diminish 'lsp-lens-mode)
+;;   (diminish 'auto-revert-mode)
+;;   (diminish 'hs-minor-mode))
+
+(use-package doom-modeline
+  :ensure t
+  :init (doom-modeline-mode 1))
+
+(use-package multiple-cursors
+  :ensure t
+  :bind
+  ("M-s-<down>" . 'mc/mark-next-like-this)
+  ("M-s-<up>" . 'mc/mark-previous-like-this)
+  ("C-M-s-<down>" . 'mc/mark-all-like-this))
+
+(use-package ivy ;; completion framework
+  :ensure t
+  :config
+  (setopt ivy-use-virtual-buffers t)
+  (setopt ivy-use-selectable-prompt t)
+  (setopt enable-recursive-minibuffers t)
+  (setopt search-default-mode #'char-fold-to-regexp)
+  (defun my/counsel-smart-find-file ()
+    "Conditionally call project-aware find-file commands."
+    (interactive)
+    (cond
+     ;; 1. Check if inside a Projectile project
+     ((and (fboundp 'projectile-project-p) 
+           (projectile-project-p))
+      (counsel-projectile-find-file))
+     
+     ;; 2. Check if inside a Git repo (using built-in VC)
+     ((and (fboundp 'vc-root-dir) 
+           (vc-root-dir))
+      (counsel-git))
+     
+     ;; 3. Fallback to standard directory navigation
+     (t
+      (counsel-find-file))))
+  (defun my/counsel-smart-search ()
+    "Search text: projectile-rg if in project, git-grep if in repo, else counsel-rg."
+    (interactive)
+    (cond
+     ;; 1. Projectile Search (highly recommended for project-wide rg)
+     ((and (fboundp 'projectile-project-p) 
+           (projectile-project-p))
+      (counsel-projectile-rg))
+     
+     ;; 2. Git Search (if in a git repo but not a projectile project)
+     ((and (fboundp 'vc-root-dir) 
+           (vc-root-dir))
+      (counsel-git-grep))
+     
+     ;; 3. Fallback (standard ripgrep in the current directory)
+     (t
+      (counsel-rg))))
+
+  :bind
+  ("C-s" . 'swiper-isearch)
+  ("M-x" . 'counsel-M-x)					;
+  ("s-x" . 'repeat-complex-command)
+  ("s-p" . 'my/counsel-smart-find-file) ;; same as VSCode, when I change editors avoid making mistakes
+  ("s-P" . 'counsel-M-x)
+  ("C-x C-f" . 'my/counsel-smart-find-file)
+  ("C-x M-f" . 'counsel-recentf)
+  ("M-y" . 'counsel-yank-pop)
+  ("<f1> f" . 'counsel-describe-function)
+  ("<f1> v" . 'counsel-describe-variable)
+  ("<f1> o" . 'counsel-describe-symbol)
+  ("<f1> l" . 'counsel-find-library)
+  ("<f2> i" . 'counsel-info-lookup-symbol)
+  ("<f2> u" . 'counsel-unicode-char)
+  ("<f2> j" . 'counsel-set-variable)
+  ("C-x b" . 'ivy-switch-buffer)
+  ("C-c v" . 'ivy-push-view)
+  ("C-c V" . 'ivy-pop-view)
+  ;; system tools
+  ("C-c c" . 'counsel-compile)
+  ("C-c g" . 'counsel-git)
+  ("C-c j" . 'counsel-git-grep)
+  ("C-c L" . 'counsel-git-log)
+  ("C-c k" . 'my/counsel-smart-search)
+  ("C-c J" . 'counsel-file-jump)
+  (:map minibuffer-local-map ("C-r" . 'counsel-minibuffer-history))
+  :commands ivy-mode)
+
+(use-package counsel ;; replaces functions with ivy-based
+  :ensure t
+  :commands counsel-mode)
+
+(use-package counsel-test
+  :ensure t)
+
+(use-package company ;; auto completion
+  :ensure t
+  :hook (emacs-startup . global-company-mode))
+
+(use-package which-key
+  :ensure t
+  :commands which-key-mode)
+
+(use-package projectile
+  :ensure t
+  :init
+  (projectile-mode +1)
+  :config
+  (setq projectile-cleanup-known-projects nil)
+  :bind
+  (:map projectile-mode-map ("C-c p" . projectile-command-map))
+  ("C-c p" . 'projectile-command-map))
+
+(use-package jtsx
+  :ensure t
+  :mode (("\\.[mc]?jsx?\\'" . jtsx-jsx-mode)
+         ("\\.tsx\\'" . jtsx-tsx-mode)
+         ("\\.ts\\'" . jtsx-typescript-mode))
+  :commands jtsx-install-treesit-language
+  :hook ((jtsx-jsx-mode . hs-minor-mode)
+         (jtsx-tsx-mode . hs-minor-mode)
+         (jtsx-typescript-mode . hs-minor-mode))
+  :custom
+  ;; Optional customizations
+     (js-indent-level 2)
+     (typescript-ts-mode-indent-offset 2)
+  ;; (jtsx-switch-indent-offset 0)
+  ;; (jtsx-indent-statement-block-regarding-standalone-parent nil)
+  ;; (jtsx-jsx-element-move-allow-step-out t)
+  ;; (jtsx-enable-jsx-electric-closing-element t)
+  ;; (jtsx-enable-electric-open-newline-between-jsx-element-tags t)
+  ;; (jtsx-enable-jsx-element-tags-auto-sync nil)
+     (jtsx-enable-all-syntax-highlighting-features t)
+  :config
+  (defun jtsx-bind-keys-to-mode-map (mode-map)
+    "Bind keys to MODE-MAP."
+    (define-key mode-map (kbd "C-c C-j") 'jtsx-jump-jsx-element-tag-dwim)
+    (define-key mode-map (kbd "C-c j o") 'jtsx-jump-jsx-opening-tag)
+    (define-key mode-map (kbd "C-c j c") 'jtsx-jump-jsx-closing-tag)
+    (define-key mode-map (kbd "C-c j r") 'jtsx-rename-jsx-element)
+    (define-key mode-map (kbd "C-c <down>") 'jtsx-move-jsx-element-tag-forward)
+    (define-key mode-map (kbd "C-c <up>") 'jtsx-move-jsx-element-tag-backward)
+    (define-key mode-map (kbd "C-c C-<down>") 'jtsx-move-jsx-element-forward)
+    (define-key mode-map (kbd "C-c C-<up>") 'jtsx-move-jsx-element-backward)
+    (define-key mode-map (kbd "C-c C-S-<down>") 'jtsx-move-jsx-element-step-in-forward)
+    (define-key mode-map (kbd "C-c C-S-<up>") 'jtsx-move-jsx-element-step-in-backward)
+    (define-key mode-map (kbd "C-c j w") 'jtsx-wrap-in-jsx-element)
+    (define-key mode-map (kbd "C-c j u") 'jtsx-unwrap-jsx)
+    (define-key mode-map (kbd "C-c j d n") 'jtsx-delete-jsx-node)
+    (define-key mode-map (kbd "C-c j d a") 'jtsx-delete-jsx-attribute)
+    (define-key mode-map (kbd "C-c j t") 'jtsx-toggle-jsx-attributes-orientation)
+    (define-key mode-map (kbd "C-c j h") 'jtsx-rearrange-jsx-attributes-horizontally)
+    (define-key mode-map (kbd "C-c j v") 'jtsx-rearrange-jsx-attributes-vertically))
+
+  (defun jtsx-bind-keys-to-jtsx-jsx-mode-map ()
+      (jtsx-bind-keys-to-mode-map jtsx-jsx-mode-map))
+
+  (defun jtsx-bind-keys-to-jtsx-tsx-mode-map ()
+      (jtsx-bind-keys-to-mode-map jtsx-tsx-mode-map))
+
+  (add-hook 'jtsx-jsx-mode-hook 'jtsx-bind-keys-to-jtsx-jsx-mode-map)
+  (add-hook 'jtsx-tsx-mode-hook 'jtsx-bind-keys-to-jtsx-tsx-mode-map))
+
+(use-package agent-shell
+  :ensure t)
+
+(use-package agent-shell-macext
+  :vc (:url "https://github.com/cxa/agent-shell-macext")
+  :hook (agent-shell-mode . agent-shell-macext-setup)
+  :after agent-shell
+  :custom
+  (agent-shell-macext-file-copy-policy 'auto)    ; auto, always-copy, always-original
+  (agent-shell-macext-notifications t)           ; enable native notifications
+  (agent-shell-macext-notify-current-buffer nil)) ; nil = suppress when shell/viewport is current and Emacs is focused
+
+(use-package vterm
+    :commands vterm
+    :custom
+    (vterm-always-compile-module t)
+    :hook
+    (vterm-mode . (lambda ()
+		    ;; Settings to mimic dracula I use for zsh.
+		    (setq-local buffer-face-mode-face '(:background "#000000" :foreground "#FFFFFF"))
+		    (buffer-face-mode 1)
+		    (text-scale-adjust 2)))
+    :bind
+    ("<f7>" . vterm))
+
 (custom-set-faces
  ;; custom-set-faces was added by Custom.
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(default ((t (:inherit nil :stipple nil :background "#303030" :foreground "#d9d9d9" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight normal :height 110 :width normal :foundry "xos4" :family "Terminus"))))
- '(background "blue")
- '(diff-added ((t (:inherit diff-changed-face :foreground "#00ff00"))))
- '(diff-added-face ((t (:inherit diff-changed-face :foreground "#00ff00"))) t)
- '(diff-changed ((t (:foreground "#ffff00"))))
- '(diff-changed-face ((t (:foreground "#ffff00"))) t)
- '(diff-file-header ((t (:background "grey20" :foreground "wheat" :weight bold))))
- '(diff-file-header-face ((t (:background "grey20" :foreground "wheat" :weight bold))) t)
- '(diff-function ((t (:inherit diff-context-face :foreground "#00ffff"))))
- '(diff-function-face ((t (:inherit diff-context-face :foreground "#00ffff"))) t)
- '(diff-header ((((class color) (background dark)) (:background "grey20" :foreground "grey75"))))
- '(diff-header-face ((((class color) (background dark)) (:background "grey20" :foreground "grey75"))) t)
- '(diff-hunk-header ((t (:inherit diff-header-face :foreground "#ff00ff"))))
- '(diff-hunk-header-face ((t (:inherit diff-header-face :foreground "#ff00ff"))) t)
- '(diff-removed ((t (:inherit diff-changed-face :foreground "#ff0000"))))
- '(diff-removed-face ((t (:inherit diff-changed-face :foreground "#ff0000"))) t)
- '(font-latex-sectioning-5-face ((((class color) (background dark)) (:inherit fixed-pitch :foreground "yellow" :weight bold))))
- '(highlight ((t (:background "CornflowerBlue"))))
- '(list-mode-item-selected ((t (:background "gold"))))
- '(makefile-space-face ((t (:background "wheat"))) t)
- '(mode-line ((t (:background "gray10" :foreground "#e9e9b0"))))
- '(mode-line-inactive ((t (:inherit mode-line :foreground "#666666" :box (:line-width -1 :color "grey30") :weight light))))
- '(paren-match ((t (:background "cyan"))))
- '(region ((t (:background "#005577"))))
- '(semantic-highlight-edits-face ((((class color) (background dark)) (:background "#222200"))))
- '(show-paren-match ((t (:foreground "black" :background "cyan"))))
- '(show-paren-mismatch ((((class color)) (:foreground "white" :background "red"))))
- '(speedbar-button-face ((((class color) (background dark)) (:foreground "green4"))))
- '(speedbar-directory-face ((((class color) (background dark)) (:foreground "khaki"))))
- '(speedbar-file-face ((((class color) (background dark)) (:foreground "cyan"))))
- '(speedbar-tag-face ((((class color) (background dark)) (:foreground "Springgreen"))))
- '(which-func ((((class color) (min-colors 88) (background dark)) (:foreground "#00ffff"))))
- '(widget-field ((((class grayscale color) (background light)) (:background "DarkBlue")))))
-
-(defun re-read-current-file ()
-  (interactive)
-  (find-file buffer-file-truename))
-
-(defun search-word-under-cursor ()
-  "Performs a nonincremental-search-forward. The word at or near point
-   is the word to search for."
-  (interactive)
-  (let ((word (current-word)))
-    (nonincremental-search-forward word)))
+ '(default ((t (:inherit nil :extend nil :stipple nil :background "#1d1f21" :foreground "#c5c8c6" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight regular :height 130 :width normal :foundry "nil" :family "Menlo"))))
+ '(cursor ((t (:background "magenta"))))
+ '(highlight ((t (:background "cyan" :foreground "black"))))
+ '(hl-line ((t (:extend t :background "black"))))
+ '(lsp-headerline-breadcrumb-path-face ((t (:inherit font-lock-string-face :height 0.8))))
+ '(lsp-headerline-breadcrumb-project-prefix-face ((t (:inherit font-lock-string-face :weight bold :height 0.8))))
+ '(lsp-headerline-breadcrumb-symbols-face ((t (:inherit font-lock-doc-face :weight bold :height 0.8))))
+ '(region ((t (:extend t :background "cyan" :foreground "black" :inverse-video nil))))
+ '(show-paren-match-expression ((t (:background "#444444"))))
+ '(whitespace-trailing ((t (:background "#ff0000" :foreground "#ffffff")))))
 
 (defun whitespace-toggle-verbose ()
   "Toggle verbosity of whitespace-mode"
   (interactive)
   (whitespace-toggle-options '(spaces newlines space-mark newline-mark)))
 
- (defun kill-other-buffers ()
-   "Kill all other buffers."
-   (interactive)
-   (mapc 'kill-buffer (delq (current-buffer) (buffer-list))))
-
-(global-set-key [(M delete)] 'delete-region)
-(global-set-key "\M-g" 'goto-line)
-(global-set-key [f1] 'manual-entry)
-(global-set-key [f2] 'save-buffer)
-(global-set-key [f3] 'search-word-under-cursor)
-(global-set-key [f4] 'find-file)
-(global-set-key [f5] 'compile)
-(global-set-key [f6] 'ff-find-other-file)
-(global-set-key [f7] 're-read-current-file)
-(global-set-key [f9] 'whitespace-toggle-verbose)
-(global-set-key [(shift f1)] 'cscope-find-this-symbol)
-(global-set-key [(shift f2)] 'cscope-find-global-definition)
-(global-set-key [(shift f3)] 'cscope-find-functions-calling-this-function)
-(global-set-key [(shift f4)] 'cscope-find-egrep-pattern)
-(global-set-key [(shift f5)] 'cscope-find-this-file)
-(global-set-key [(shift f6)] 'cscope-find-this-text-string)
-(global-set-key [(shift f7)] 'cscope-find-files-including-file)
-(global-set-key [(shift f9)] 'cscope-prev-symbol)
-(global-set-key [(shift f10)] 'cscope-next-symbol)
-(global-set-key [(shift f11)] 'cscope-prev-file)
-(global-set-key [(shift f12)] 'cscope-next-file)
-(global-set-key [(shift prior)] 'previous-multiframe-window)
-(global-set-key [(shift next)] 'next-multiframe-window)
-
-(global-set-key [(control tab)] 'bs-cycle-next)
-(global-set-key [(control prior)] 'previous-multiframe-window)
-(global-set-key [(control next)] 'next-multiframe-window)
-
-(setq org-directory "~/Documents/org")
-(setq org-mobile-inbox-for-pull "~/Documents/org/flagged.org")
-(setq org-mobile-directory "~/Dropbox/MobileOrg")
-
-(global-set-key "\C-cl" 'org-store-link)
-(global-set-key "\C-ca" 'org-agenda)
-(global-set-key "\C-cb" 'org-iswitchb)
-(global-set-key [f11] 'git-status)
-
-(c-add-style
- "e17"
- '("gnu"
-   (indent-tabs-mode . nil)
-   (tab-width . 8)
-   (c-offsets-alist
-    .
-    ((defun-block-intro . 3)
-     (statement-block-intro . 3)
-     (case-label . 1)
-     (statement-case-intro . 3)
-     (inclass . 3)
-     ))))
-
-(c-add-style
- "linux4"
- '("linux"
-   (indent-tabs-mode . nil)
-   (tab-width . 8)
-   (c-basic-offset . 4)))
-
-(c-add-style
- "linux2"
- '("linux"
-   (indent-tabs-mode . nil)
-   (tab-width . 8)
-   (c-basic-offset . 2)))
-
-(c-add-style
- "webkit"
- '((c-tab-always-indent . f)
-   (indent-tabs-mode . nil)
-   (tab-width . 8)
-   (c-basic-offset . 4)
-   (c-offsets-alist
-    .
-    ((innamespace . 0)
-     (inline-open . 0)
-     (label . 0)
-     (statement-cont . +)))))
-
-(c-add-style
- "e-detour"
- '("java"
-   (indent-tabs-mode . t)
-   (tab-width . 4)
-   (c-basic-offset . 4)
-   (c-offsets-alist
-    .
-    ((defun-block-intro . 4)
-     (statement-case-intro . 4)))))
-
-(defun evas-c-mode-hooks ()
-  (let ((path (buffer-file-name)))
-    (cond
-     ((string-match "\\.eot?$" path) (c-set-style "linux4")
-                                   (whitespace-toggle-verbose))
-     ((string-match "/Development/git/efl" path) (c-set-style "e17")
-                                   (whitespace-toggle-verbose))
-     )
-    )
-  )
-(add-hook 'c-mode-common-hook 'evas-c-mode-hooks)
-
-(defun profusion-c-mode-hooks ()
-  (let ((path (buffer-file-name)))
-    (cond
-     ((string-match "guarana" path) (c-set-style "linux4"))
-     ((string-match "evasive" path) (c-set-style "linux4"))
-     )
-    )
-  )
-(add-hook 'c-mode-common-hook 'profusion-c-mode-hooks)
-
-(defun webkit-c-mode-hooks ()
-  (let ((path (buffer-file-name)))
-    (cond
-     ((string-match "/webkit/" path) (c-set-style "webkit"))
-     )
-    )
-  )
-(add-hook 'c-mode-common-hook 'webkit-c-mode-hooks)
+(defun kill-other-buffers ()
+  "Kill all other buffers."
+  (interactive)
+  (mapc 'kill-buffer (delq (current-buffer) (buffer-list))))
 
 
-(defun e-detour-c-mode-hooks ()
-  (let ((path (buffer-file-name)))
-    (cond
-     ((string-match "/svn/e/THEMES/detorious" path) (c-set-style "e-detour"))
-     )
-    )
-  )
-(add-hook 'c-mode-common-hook 'e-detour-c-mode-hooks)
-
-
-(defun c-lineup-arglist-kernel-vim (langelem)
-  "Line up argument lists by tabs in kernel-vim style"
-  (let* ((lineup (c-lineup-arglist langelem))
-         (steps (floor (+ c-basic-offset -1
-                          (if (arrayp lineup)
-                              (aref lineup 0)
-                            lineup)) c-basic-offset))
-         tabbed)
-    (save-excursion
-      (goto-char (cdr langelem))
-      (when (looking-at "\(if\|while\|for\)\s ")
-        (setq steps (1+ steps))))
-    (setq tabbed (vector (* (max steps 1) c-basic-offset)))
-    tabbed))
-
-(defconst kernel-vim-c-style
-  '("linux" (c-offsets-alist
-             (arglist-cont-nonempty
-              c-lineup-gcc-asm-reg
-              c-lineup-arglist-kernel-vim)))
-  "C Style for kernel as vim do.")
-
-(c-add-style "kernel-vim" kernel-vim-c-style)
-
-(add-hook 'c-mode-hook 'kernel-vim-c-mode-hook)
-
-(defun kernel-vim-c-mode-hook ()
-  (setq show-trailing-whitespace t)
-  (let ((file (buffer-file-name)))
-    (cond ((or (string-match "/ofono" file)
-               (string-match "/connman" file)
-               (string-match "/kmod" file)
-               (string-match "/bluez" file)
-               (string-match "/ell" file))
-           (c-set-style "kernel-vim")
-           (setq indent-tabs-mode t
-                 sentence-end-double-space t)))))
-
-
-(defun my-autoconf-mode-common-hook ()
-  (let ((path (buffer-file-name)))
-    (cond ((or (string-match "/ofono" file)
-               (string-match "/connman" file)
-               (string-match "/kmod" file)
-               (string-match "/bluez" file)
-               (string-match "/ell" file))
-           (setq tab-width 8
-                 indent-tabs-mode t))
-          )
-    )
-  )
-(add-hook 'autoconf-mode-hook 'my-autoconf-mode-common-hook)
-
-
-(put 'downcase-region 'disabled nil)
-
-(setq load-path (cons "/home/gustavo/.emacs.d/site-packages" load-path))
-
-(add-to-list 'load-path "/home/gustavo/.emacs.d/site-packages/pyrex-mode.el")
-(add-to-list 'auto-mode-alist '("\\.pyx$\\|\\.pxi$\\|\\.pxd$" . pyrex-mode))
-(autoload 'pyrex-mode "pyrex-mode")
-
-(add-to-list 'load-path "/home/gustavo/.emacs.d/site-packages/edje-mode.el")
-(add-to-list 'auto-mode-alist '("\\.edc$" . edje-mode))
-(autoload 'edje-mode "edje-mode")
-
-(add-to-list 'load-path "/home/gustavo/.emacs.d/site-packages/eo-mode.el")
-(add-to-list 'auto-mode-alist '("\\.eo$\\|\\.eot$" . eo-mode))
-(autoload 'eo-mode "eo-mode")
-
-(put 'upcase-region 'disabled nil)
-
-(add-to-list 'auto-mode-alist '("\\.org\\'" . org-mode))
-
-(server-start)
+(keymap-global-set "s-g" 'goto-line)
+(keymap-global-set "<f4>" 'magit-status)
+(keymap-global-set "<f8>" 'flymake-goto-next-error)
+(keymap-global-set "C-<f8>" 'flymake-goto-prev-error)
+(keymap-global-set "<f12>" 'xref-find-definitions)
+(keymap-global-set "C-<f12>" 'xref-find-references)
