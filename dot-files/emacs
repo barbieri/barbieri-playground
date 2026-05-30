@@ -31,6 +31,16 @@
  '(inhibit-startup-screen t)
  '(initial-major-mode 'markdown-mode)
  '(initial-scratch-message nil)
+ '(magit-diff-fontify-hunk 'all)
+ '(magit-diff-highlight-hunk-region-functions
+   '(magit-diff-highlight-hunk-region-dim-outside
+     magit-diff-highlight-hunk-region-using-underline
+     magit-diff-highlight-hunk-region-using-overlays
+     magit-diff-highlight-hunk-region-using-face))
+ '(magit-diff-refine-hunk 'all)
+ '(magit-diff-specify-hunk-foreground nil)
+ '(magit-diff-use-indicator-faces t)
+ '(magit-format-file-function 'magit-format-file-nerd-icons)
  '(menu-bar-mode nil)
  '(package-archives
    '(("gnu" . "https://elpa.gnu.org/packages/")
@@ -38,11 +48,14 @@
      ("melpa" . "https://melpa.org/packages/")))
  '(package-selected-packages
    '(agent-shell agent-shell-macext color-theme-sanityinc-tomorrow
-		 company counsel counsel-projectile counsel-test
-		 diff-hl diminish doom-modeline exec-path-from-shell
+		 colorful-mode company counsel counsel-projectile
+		 counsel-test diff-hl diminish doom-modeline
+		 edit-indirect exec-path-from-shell
 		 highlight-parentheses jinx jtsx lsp-ivy lsp-mode
-		 lsp-ui magit multiple-cursors projectile
-		 projectile-git-autofetch vterm))
+		 lsp-treemacs lsp-ui magit multiple-cursors
+		 prisma-ts-mode projectile projectile-git-autofetch
+		 transient treemacs treemacs-magit treemacs-nerd-icons
+		 treemacs-projectile vterm yaml-mode))
  '(package-vc-selected-packages
    '((agent-shell-macext :url "https://github.com/cxa/agent-shell-macext")))
  '(require-final-newline 'ask)
@@ -51,6 +64,8 @@
  '(show-paren-style 'expression)
  '(show-trailing-whitespace t)
  '(tool-bar-mode nil)
+ '(treemacs-file-event-delay 500)
+ '(treemacs-show-cursor t)
  '(use-dialog-box nil))
 
 (use-package color-theme-sanityinc-tomorrow
@@ -65,7 +80,9 @@
 
 (use-package magit
   :ensure t
-  :bind ("C-x g" . magit-status)
+  :bind
+  ("C-x g" . magit-status)
+  ("<f6>" . magit-status)
   :config
   (setq magit-display-buffer-function 'magit-display-buffer-same-window-except-diff-v1))
 
@@ -92,25 +109,28 @@
   (setopt jinx-languages "en_US pt_BR")
   :hook (emacs-startup . global-jinx-mode)
   :bind (("M-$" . jinx-correct)
-         ("C-M-$" . jinx-languages)))
+	 ("C-M-$" . jinx-languages)))
 
 (use-package lsp-mode
   :ensure t
   :init
-  (setq gc-cons-threshold (* 256 1024 1024)) ;; needs lots of memory, 256mb
-  (setq read-process-output-max (* 4 1024 1024)) ;; 4mb
-  (setq lsp-modeline-diagnostics-scope :workspace)
+  (setopt lsp-clients-typescript-prefer-use-project-ts-server t)
   (setopt lsp-eslint-provide-lint-task t)
   (setopt lsp-eslint-server-command '("vscode-eslint-language-server" "--stdio"))
   (setopt lsp-file-watch-threshold 5000)
-  (setopt lsp-markdown-server-command "vscode-markdown-language-server")
   (setopt lsp-ui-doc-show-with-cursor t)
   (setopt lsp-warn-no-matched-clients nil)
+  (setq gc-cons-threshold (* 256 1024 1024)) ;; needs lots of memory, 256mb
+  (setq lsp-modeline-diagnostics-scope :workspace)
+  (setq read-process-output-max (* 4 1024 1024)) ;; 4mb
   :hook ((prog-mode-hook . lsp)
 	 (markdown-mode . lsp)
 	 (json-mode . lsp)
-         (lsp-mode . lsp-enable-which-key-integration))
-  :commands (lsp lsp-deferred))
+	 (yaml-mode . lsp)
+	 (bash-ts-mode . lsp)
+	 (sh-mode . lsp)
+	 (lsp-mode . lsp-enable-which-key-integration))
+  :commands lsp)
 
 (use-package lsp-ui
   :ensure t
@@ -118,28 +138,40 @@
   (setopt lsp-ui-doc-show-with-mouse t)
   :commands lsp-ui-mode lsp-ui-doc-mode)
 
-; (use-package helm-lsp
-;  :ensure t
-;  :commands helm-lsp-workspace-symbol)
-
 (use-package lsp-ivy
   :ensure t
   :commands lsp-ivy-workspace-symbol)
 
-;(use-package lsp-treemacs :commands lsp-treemacs-errors-list)
+(use-package treemacs
+  :ensure t
+  :defer t
+  :bind
+  ("C-c 0" . treemacs-select-window)
+  ("C-c t" . treemacs)
+  :config
+  (treemacs-resize-icons 16)
+  (treemacs-follow-mode t)
+  (treemacs-filewatch-mode t)
+  (setq treemacs-is-never-other-window t)
+  (treemacs-fringe-indicator-mode 'always))
 
-;; (use-package diminish ;; remove stuff from modeline
-;;   :ensure t
-;;   :init
-;;   (diminish 'abbrev-mode)
-;;   (diminish 'eldoc-mode)
-;;   (diminish 'company-mode)
-;;   (diminish 'highlight-parentheses-mode)
-;;   (diminish 'jinx-mode)
-;;   (diminish 'lsp-mode)
-;;   (diminish 'lsp-lens-mode)
-;;   (diminish 'auto-revert-mode)
-;;   (diminish 'hs-minor-mode))
+(use-package treemacs-nerd-icons
+  :ensure t
+  :config
+  (treemacs-nerd-icons-config))
+
+(use-package lsp-treemacs
+  :ensure t
+  :after (treemacs lsp)
+  :commands lsp-treemacs-errors-list)
+
+(use-package treemacs-magit
+  :after (treemacs magit)
+  :ensure t)
+
+(use-package treemacs-projectile
+  :after (treemacs)
+  :ensure t)
 
 (use-package doom-modeline
   :ensure t
@@ -164,15 +196,15 @@
     (interactive)
     (cond
      ;; 1. Check if inside a Projectile project
-     ((and (fboundp 'projectile-project-p) 
-           (projectile-project-p))
+     ((and (fboundp 'projectile-project-p)
+	   (projectile-project-p))
       (counsel-projectile-find-file))
-     
+
      ;; 2. Check if inside a Git repo (using built-in VC)
-     ((and (fboundp 'vc-root-dir) 
-           (vc-root-dir))
+     ((and (fboundp 'vc-root-dir)
+	   (vc-root-dir))
       (counsel-git))
-     
+
      ;; 3. Fallback to standard directory navigation
      (t
       (counsel-find-file))))
@@ -181,15 +213,15 @@
     (interactive)
     (cond
      ;; 1. Projectile Search (highly recommended for project-wide rg)
-     ((and (fboundp 'projectile-project-p) 
-           (projectile-project-p))
+     ((and (fboundp 'projectile-project-p)
+	   (projectile-project-p))
       (counsel-projectile-rg))
-     
+
      ;; 2. Git Search (if in a git repo but not a projectile project)
-     ((and (fboundp 'vc-root-dir) 
-           (vc-root-dir))
+     ((and (fboundp 'vc-root-dir)
+	   (vc-root-dir))
       (counsel-git-grep))
-     
+
      ;; 3. Fallback (standard ripgrep in the current directory)
      (t
       (counsel-rg))))
@@ -200,7 +232,8 @@
   ("s-x" . 'repeat-complex-command)
   ("s-p" . 'my/counsel-smart-find-file) ;; same as VSCode, when I change editors avoid making mistakes
   ("s-P" . 'counsel-M-x)
-  ("C-x C-f" . 'my/counsel-smart-find-file)
+  ("s-r" . 'counsel-rg)
+  ("C-x C-f" . 'counsel-find-file)
   ("C-x M-f" . 'counsel-recentf)
   ("M-y" . 'counsel-yank-pop)
   ("<f1> f" . 'counsel-describe-function)
@@ -251,12 +284,12 @@
 (use-package jtsx
   :ensure t
   :mode (("\\.[mc]?jsx?\\'" . jtsx-jsx-mode)
-         ("\\.tsx\\'" . jtsx-tsx-mode)
-         ("\\.ts\\'" . jtsx-typescript-mode))
+	 ("\\.tsx\\'" . jtsx-tsx-mode)
+	 ("\\.ts\\'" . jtsx-typescript-mode))
   :commands jtsx-install-treesit-language
   :hook ((jtsx-jsx-mode . hs-minor-mode)
-         (jtsx-tsx-mode . hs-minor-mode)
-         (jtsx-typescript-mode . hs-minor-mode))
+	 (jtsx-tsx-mode . hs-minor-mode)
+	 (jtsx-typescript-mode . hs-minor-mode))
   :custom
   ;; Optional customizations
      (js-indent-level 2)
@@ -310,6 +343,32 @@
   (agent-shell-macext-notifications t)           ; enable native notifications
   (agent-shell-macext-notify-current-buffer nil)) ; nil = suppress when shell/viewport is current and Emacs is focused
 
+(use-package yaml
+  :commands yaml-mode)
+
+(use-package markdown-mode
+  :ensure t
+  :mode ("README\\.md\\'" . gfm-mode)
+  :init (setq markdown-command "multimarkdown")
+  :bind (:map markdown-mode-map
+	      ("C-c C-e" . markdown-do)))
+
+(use-package colorful-mode
+  :ensure t
+  :custom
+  (colorful-use-prefix t)
+  (colorful-only-strings 'only-prog)
+  (css-fontify-colors nil)
+  :config
+  (global-colorful-mode t)
+  (add-to-list 'global-colorful-modes 'helpful-mode))
+
+(use-package edit-indirect
+  :ensure t)
+
+(use-package prisma-ts-mode
+  :ensure t)
+
 (use-package vterm
     :commands vterm
     :custom
@@ -330,25 +389,49 @@
  ;; If there is more than one, they won't work right.
  '(default ((t (:inherit nil :extend nil :stipple nil :background "#1d1f21" :foreground "#c5c8c6" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight regular :height 130 :width normal :foundry "nil" :family "Menlo"))))
  '(cursor ((t (:background "magenta"))))
+ '(diff-refine-added ((t (:background "#005500"))))
+ '(diff-refine-removed ((t (:background "#550000"))))
  '(highlight ((t (:background "cyan" :foreground "black"))))
  '(hl-line ((t (:extend t :background "black"))))
  '(lsp-headerline-breadcrumb-path-face ((t (:inherit font-lock-string-face :height 0.8))))
  '(lsp-headerline-breadcrumb-project-prefix-face ((t (:inherit font-lock-string-face :weight bold :height 0.8))))
  '(lsp-headerline-breadcrumb-symbols-face ((t (:inherit font-lock-doc-face :weight bold :height 0.8))))
+ '(magit-diff-added ((t (:extend nil :background "#002f00" :foreground "#00ff00"))))
+ '(magit-diff-added-highlight ((t (:extend t :background "#003300" :foreground "#00ff00"))))
+ '(magit-diff-added-indicator ((t (:background "#003300" :foreground "#00ff00"))))
+ '(magit-diff-file-heading ((t (:extend t :foreground "#ffff66"))))
+ '(magit-diff-file-heading-highlight ((t (:extend t :background "#555555" :weight bold))))
+ '(magit-diff-hunk-heading ((t (:extend t :background "#664400" :foreground "#ffff00"))))
+ '(magit-diff-hunk-heading-highlight ((t (:extend t :background "#ffff00" :foreground "#664400"))))
+ '(magit-diff-hunk-heading-selection ((t (:inherit magit-diff-hunk-heading-highlight :extend t :foreground "gray30" :weight bold))))
+ '(magit-diff-removed ((t (:extend t :background "#2f0000" :foreground "#ff0000"))))
+ '(magit-diff-removed-highlight ((t (:extend t :background "#440000" :foreground "#ff0000"))))
+ '(magit-diff-removed-indicator ((t (:background "#440000" :foreground "#ff0000"))))
+ '(magit-section-heading ((t (:extend t :foreground "#fffff" :weight bold :height 1.5))))
+ '(magit-section-heading-selection ((t (:extend t :foreground "#de935f" :weight bold))))
+ '(magit-section-highlight ((t (:extend t :background "#555555" :weight bold))))
  '(region ((t (:extend t :background "cyan" :foreground "black" :inverse-video nil))))
  '(show-paren-match-expression ((t (:background "#444444"))))
+ '(trailing-whitespace ((t (:background "#ff0000"))))
  '(whitespace-trailing ((t (:background "#ff0000" :foreground "#ffffff")))))
 
 (defun whitespace-toggle-verbose ()
   "Toggle verbosity of whitespace-mode"
   (interactive)
+  (setq whitespace-style '(face tabs tab-mark))
   (whitespace-toggle-options '(spaces newlines space-mark newline-mark)))
+
+(setq whitespace-style '(tabs trailing))
+(global-whitespace-mode 1)
+
+(setq-default indent-tabs-mode nil)
+(setq-default tab-width 2)
+(setq-default standard-indent 2)
 
 (defun kill-other-buffers ()
   "Kill all other buffers."
   (interactive)
   (mapc 'kill-buffer (delq (current-buffer) (buffer-list))))
-
 
 (keymap-global-set "s-g" 'goto-line)
 (keymap-global-set "<f4>" 'magit-status)
@@ -356,3 +439,7 @@
 (keymap-global-set "C-<f8>" 'flymake-goto-prev-error)
 (keymap-global-set "<f12>" 'xref-find-definitions)
 (keymap-global-set "C-<f12>" 'xref-find-references)
+(keymap-global-set "s-{" 'tab-bar-switch-to-prev-tab)
+(keymap-global-set "s-}" 'tab-bar-switch-to-next-tab)
+(keymap-global-set "s-t" 'tab-bar-new-tab)
+(keymap-global-set "s-w" 'tab-bar-close-tab)

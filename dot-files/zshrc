@@ -1,10 +1,24 @@
 # If you come from bash you might have to change your $PATH.
 export LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8
-export EDITOR="$HOME/bin/emacs"
-export ANDROID_HOME=$HOME/Library/Android/sdk
-export JAVA_HOME="/Applications/Android Studio.app/Contents/jre/Contents/Home"
-export HOMEBREW_PREFIX=/opt/homebrew
-export PATH="$HOMEBREW_PREFIX/bin:$JAVA_HOME/bin:$PATH:$ANDROID_HOME/tools:$ANDROID_HOME/tools/bin:$ANDROID_HOME/emulator:$ANDROID_HOME/platform-tools"
+case $(uname -s) in
+    Darwin)
+        export EDITOR="$HOME/bin/emacs"
+        export ANDROID_HOME="$HOME/Library/Android/sdk"
+        export JAVA_HOME="/Applications/Android Studio.app/Contents/jre/Contents/Home"
+        export HOMEBREW_PREFIX=/opt/homebrew
+        export NVM_INSTALL_DIR="$HOMEBREW_PREFIX/opt/nvm"
+        export NVM_COMPLETION="$NVM_INSTALL_DIR/etc/bash_completion.d/nvm"
+        ;;
+    Linux)
+        export EDITOR="/usr/bin/emacs"
+        export ANDROID_HOME="$HOME/Android/Sdk"
+        export JAVA_HOME="/usr/lib/jvm/default"
+        export HOMEBREW_PREFIX=/home/linuxbrew
+        export NVM_INSTALL_DIR="/usr/share/nvm"
+        export NVM_COMPLETION="$NVM_INSTALL_DIR/bash_completion"
+        ;;
+esac
+export PATH="$HOMEBREW_PREFIX/bin:$JAVA_HOME/bin:$PATH:$ANDROID_HOME/tools:$ANDROID_HOME/tools/bin:$ANDROID_HOME/emulator:$ANDROID_HOME/platform-tools:$HOME/.cargo/bin"
 
 export PIPENV_VENV_IN_PROJECT=1
 
@@ -243,16 +257,20 @@ function gra-github() {
 }
 
 export NVM_DIR="$HOME/.nvm"
-NVM_INSTALL_DIR=$HOMEBREW_PREFIX/opt/nvm
 if [ -d $NVM_INSTALL_DIR ]; then
     if [ -s "$NVM_INSTALL_DIR/nvm.sh" ]; then
         source "$NVM_INSTALL_DIR/nvm.sh"  # This loads nvm
     fi
-    if [ -s "$NVM_INSTALL_DIR/etc/bash_completion.d/nvm" ]; then
-        source "$NVM_INSTALL_DIR/etc/bash_completion.d/nvm"  # This loads nvm bash_completion
+    if [ -s "$NVM_COMPLETION" ]; then
+        source "$NVM_COMPLETION"  # This loads nvm bash_completion
     fi
 fi
 
+export OPENCODE_EXPERIMENTAL_LSP_TOOL=true
+export OPENCODE_ENABLE_EXA=true
+
+eval "$(opencode completion zsh)"
 eval "$(codex completion zsh)"
+eval "$(pnpm completion zsh)"
 
 export PATH="$HOME/bin:$PATH"
