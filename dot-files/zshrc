@@ -13,7 +13,7 @@ case $(uname -s) in
         export EDITOR="/usr/bin/emacs"
         export ANDROID_HOME="$HOME/Android/Sdk"
         export JAVA_HOME="/usr/lib/jvm/default"
-        export HOMEBREW_PREFIX=/home/linuxbrew
+        export HOMEBREW_PREFIX=/home/linuxbrew/.linuxbrew
         export NVM_INSTALL_DIR="/usr/share/nvm"
         export NVM_COMPLETION="$NVM_INSTALL_DIR/bash_completion"
         ;;
