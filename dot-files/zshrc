@@ -271,6 +271,8 @@ export OPENCODE_ENABLE_EXA=true
 
 eval "$(opencode completion zsh)"
 eval "$(codex completion zsh)"
+eval "$(grok completions zsh)"
 eval "$(pnpm completion zsh)"
+eval "$(gog completion zsh)"
 
 export PATH="$HOME/bin:$PATH"
