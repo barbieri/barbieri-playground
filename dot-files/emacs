@@ -93,6 +93,7 @@
 	 (dired-mode-hook . diff-hl-dired-mode))
   :config
   (global-diff-hl-mode)
+  (diff-hl-margin-local-mode t)
   (diff-hl-flydiff-mode 1))
 
 (use-package jinx ;; spell checker
@@ -443,3 +444,6 @@
 (keymap-global-set "s-}" 'tab-bar-switch-to-next-tab)
 (keymap-global-set "s-t" 'tab-bar-new-tab)
 (keymap-global-set "s-w" 'tab-bar-close-tab)
+(keymap-global-set "C-+" 'text-scale-increase)
+(keymap-global-set "C--" 'text-scale-decrease)
+
