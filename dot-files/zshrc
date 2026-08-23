@@ -18,7 +18,16 @@ case $(uname -s) in
         export NVM_COMPLETION="$NVM_INSTALL_DIR/bash_completion"
         ;;
 esac
-export PATH="$HOMEBREW_PREFIX/bin:$JAVA_HOME/bin:$PATH:$ANDROID_HOME/tools:$ANDROID_HOME/tools/bin:$ANDROID_HOME/emulator:$ANDROID_HOME/platform-tools:$HOME/.cargo/bin"
+export PATH="$HOME/bin:$HOME/.local/bin:$HOMEBREW_PREFIX/bin:$HOME/.cargo/bin:$JAVA_HOME/bin:$PATH:$ANDROID_HOME/tools:$ANDROID_HOME/tools/bin:$ANDROID_HOME/emulator:$ANDROID_HOME/platform-tools"
+
+export PIPENV_VENV_IN_PROJECT=1
+
+HISTFILE=~/.histfile
+HISTSIZE=10000
+SAVEHIST=10000
+setopt appendhistory autocd beep extendedglob notify
+
+source ~/.zsh-private
 
 if (( $+commands[pyenv] )); then
     export PYENV_ROOT="${PYENV_ROOT:-$HOME/.pyenv}"
@@ -104,16 +113,6 @@ fpath=(
     "$ZSH_COMPLETION_CACHE_DIR"
     $fpath
 )
-
-export PIPENV_VENV_IN_PROJECT=1
-
-HISTFILE=~/.histfile
-HISTSIZE=10000
-SAVEHIST=10000
-setopt appendhistory autocd beep extendedglob notify
-
-source ~/.zsh-private
-
 # Path to your oh-my-zsh installation.
   export ZSH=$HOME/.oh-my-zsh
 
@@ -411,4 +410,3 @@ _load-nvm-for-directory
 export OPENCODE_EXPERIMENTAL_LSP_TOOL=true
 export OPENCODE_ENABLE_EXA=true
 
-export PATH="$HOME/bin:$PATH"
