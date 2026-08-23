@@ -20,10 +20,91 @@ case $(uname -s) in
 esac
 export PATH="$HOMEBREW_PREFIX/bin:$JAVA_HOME/bin:$PATH:$ANDROID_HOME/tools:$ANDROID_HOME/tools/bin:$ANDROID_HOME/emulator:$ANDROID_HOME/platform-tools:$HOME/.cargo/bin"
 
-export PIPENV_VENV_IN_PROJECT=1
+if (( $+commands[pyenv] )); then
+    export PYENV_ROOT="${PYENV_ROOT:-$HOME/.pyenv}"
+    export PYENV_SHELL=zsh
+    path=(${path:#$PYENV_ROOT/shims})
+    path=("$PYENV_ROOT/shims" $path)
 
-eval "$(pyenv init -)"
-eval "$(rbenv init -)"
+    function pyenv() {
+        local command=${1:-}
+        (( $# )) && shift
+
+        case "$command" in
+            rehash|shell) eval "$(command pyenv "sh-$command" "$@")" ;;
+            *) command pyenv "$command" "$@" ;;
+        esac
+    }
+fi
+
+if (( $+commands[rbenv] )); then
+    export RBENV_ROOT="${RBENV_ROOT:-$HOME/.rbenv}"
+    export RBENV_SHELL=zsh
+    path=(${path:#$RBENV_ROOT/shims})
+    path=("$RBENV_ROOT/shims" $path)
+
+    function rbenv() {
+        local command=${1:-}
+        (( $# )) && shift
+
+        case "$command" in
+            rehash|shell) eval "$(command rbenv "sh-$command" "$@")" ;;
+            *) command rbenv "$command" "$@" ;;
+        esac
+    }
+
+    alias rubies="rbenv versions"
+    alias gemsets="rbenv gemset list"
+fi
+
+ZSH_COMPLETION_CACHE_DIR="${XDG_CACHE_HOME:-$HOME/.cache}/zsh/completions"
+ZSH_COMPDUMP="$ZSH_COMPLETION_CACHE_DIR/.zcompdump"
+
+function _cache-zsh-completion() {
+    local name=${1:?Missing completion name}
+    shift
+    local target="$ZSH_COMPLETION_CACHE_DIR/_$name"
+    local generated="$target.$$.generated"
+    local temporary="$target.$$.tmp"
+
+    if ! "$@" >| "$generated" ||
+       ! command awk 'found || /^#compdef([[:space:]]|$)/ { found=1; print } END { exit !found }' "$generated" >| "$temporary"; then
+        command rm -f -- "$generated" "$temporary"
+        return 1
+    fi
+
+    command rm -f -- "$generated"
+    command mv -f -- "$temporary" "$target"
+}
+
+function refresh-zsh-completions() {
+    local result=0
+    command mkdir -p -- "$ZSH_COMPLETION_CACHE_DIR" || return
+
+    (( $+commands[opencode] )) && { _cache-zsh-completion opencode opencode completion zsh || result=1 }
+    (( $+commands[codex] )) && { _cache-zsh-completion codex codex completion zsh || result=1 }
+    (( $+commands[grok] )) && { _cache-zsh-completion grok grok completions zsh || result=1 }
+    (( $+commands[pnpm] )) && { _cache-zsh-completion pnpm pnpm completion zsh || result=1 }
+    (( $+commands[gog] )) && { _cache-zsh-completion gog gog completion zsh || result=1 }
+
+    command rm -f -- "$ZSH_COMPDUMP" "$ZSH_COMPDUMP.zwc"
+    return $result
+}
+
+for completion in opencode codex grok pnpm gog; do
+    if (( $+commands[$completion] )) && [[ ! -s "$ZSH_COMPLETION_CACHE_DIR/_$completion" ]]; then
+        refresh-zsh-completions
+        break
+    fi
+done
+unset completion
+
+fpath=(
+    "$ZSH_COMPLETION_CACHE_DIR"
+    $fpath
+)
+
+export PIPENV_VENV_IN_PROJECT=1
 
 HISTFILE=~/.histfile
 HISTSIZE=10000
@@ -84,7 +165,8 @@ HYPHEN_INSENSITIVE="true"
 # Custom plugins may be added to ~/.oh-my-zsh/custom/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
 # Add wisely, as too many plugins slow down shell startup.
-plugins=(git history-substring-search colorize safe-paste urltools virtualenv yarn npm nvm pyenv rbenv docker docker-compose aws)
+plugins=(git history-substring-search colorize safe-paste urltools virtualenv yarn npm docker docker-compose)
+(( $+commands[aws] )) && plugins+=(aws)
 
 source $ZSH/oh-my-zsh.sh
 
@@ -257,22 +339,74 @@ function gra-github() {
 }
 
 export NVM_DIR="$HOME/.nvm"
-if [ -d $NVM_INSTALL_DIR ]; then
-    if [ -s "$NVM_INSTALL_DIR/nvm.sh" ]; then
-        source "$NVM_INSTALL_DIR/nvm.sh"  # This loads nvm
+NVM_LAZY_COMMANDS=(nvm node npm npx pnpm pnpx yarn corepack)
+NVM_LAZY_LOADED=0
+NVMRC_ACTIVE_PATH=""
+
+function _load-nvm() {
+    (( NVM_LAZY_LOADED )) && return
+    [[ -s "$NVM_INSTALL_DIR/nvm.sh" ]] || return 1
+
+    local command
+    for command in $NVM_LAZY_COMMANDS; do
+        unfunction "$command" 2>/dev/null
+    done
+
+    path=(${path:#${NVM_DIR}/versions/node/*/bin})
+    unset NVM_BIN NVM_INC
+
+    source "$NVM_INSTALL_DIR/nvm.sh" || return
+    [[ -s "$NVM_COMPLETION" ]] && source "$NVM_COMPLETION"
+    NVM_LAZY_LOADED=1
+    nvm use default --silent >/dev/null 2>&1
+    return 0
+}
+
+for nvm_lazy_command in $NVM_LAZY_COMMANDS; do
+    eval "function $nvm_lazy_command() { _load-nvm || return; $nvm_lazy_command \"\$@\"; }"
+done
+unset nvm_lazy_command
+
+function _find-nvmrc() {
+    local directory=$PWD
+
+    while [[ "$directory" != / ]]; do
+        if [[ -f "$directory/.nvmrc" ]]; then
+            REPLY="$directory/.nvmrc"
+            return
+        fi
+        directory=${directory:h}
+    done
+
+    [[ -f /.nvmrc ]] || return 1
+    REPLY=/.nvmrc
+}
+
+function _load-nvm-for-directory() {
+    if _find-nvmrc; then
+        [[ "$REPLY" == "$NVMRC_ACTIVE_PATH" ]] && return
+        local nvmrc_path=$REPLY
+        local requested_version=$(<"$nvmrc_path")
+        _load-nvm || return
+        NVMRC_ACTIVE_PATH=$nvmrc_path
+
+        if [[ "$(nvm version "$requested_version")" == N/A ]]; then
+            print -u2 -- "nvm: $requested_version from $nvmrc_path is not installed; run 'nvm install' in that directory"
+            return 0
+        fi
+
+        nvm use "$requested_version" --silent || return 0
+    elif (( NVM_LAZY_LOADED )) && [[ -n "$NVMRC_ACTIVE_PATH" ]]; then
+        nvm use default --silent
+        NVMRC_ACTIVE_PATH=""
     fi
-    if [ -s "$NVM_COMPLETION" ]; then
-        source "$NVM_COMPLETION"  # This loads nvm bash_completion
-    fi
-fi
+}
+
+autoload -U add-zsh-hook
+add-zsh-hook chpwd _load-nvm-for-directory
+_load-nvm-for-directory
 
 export OPENCODE_EXPERIMENTAL_LSP_TOOL=true
 export OPENCODE_ENABLE_EXA=true
-
-eval "$(opencode completion zsh)"
-eval "$(codex completion zsh)"
-eval "$(grok completions zsh)"
-eval "$(pnpm completion zsh)"
-eval "$(gog completion zsh)"
 
 export PATH="$HOME/bin:$PATH"
