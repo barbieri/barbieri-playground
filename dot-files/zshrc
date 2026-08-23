@@ -83,6 +83,7 @@ function refresh-zsh-completions() {
 
     (( $+commands[opencode] )) && { _cache-zsh-completion opencode opencode completion zsh || result=1 }
     (( $+commands[codex] )) && { _cache-zsh-completion codex codex completion zsh || result=1 }
+    (( $+commands[openclaw] )) && { _cache-zsh-completion openclaw openclaw completion zsh || result=1 }
     (( $+commands[grok] )) && { _cache-zsh-completion grok grok completions zsh || result=1 }
     (( $+commands[pnpm] )) && { _cache-zsh-completion pnpm pnpm completion zsh || result=1 }
     (( $+commands[gog] )) && { _cache-zsh-completion gog gog completion zsh || result=1 }
@@ -91,7 +92,7 @@ function refresh-zsh-completions() {
     return $result
 }
 
-for completion in opencode codex grok pnpm gog; do
+for completion in opencode codex openclaw grok pnpm gog; do
     if (( $+commands[$completion] )) && [[ ! -s "$ZSH_COMPLETION_CACHE_DIR/_$completion" ]]; then
         refresh-zsh-completions
         break
@@ -167,6 +168,7 @@ HYPHEN_INSENSITIVE="true"
 # Add wisely, as too many plugins slow down shell startup.
 plugins=(git history-substring-search colorize safe-paste urltools virtualenv yarn npm docker docker-compose)
 (( $+commands[aws] )) && plugins+=(aws)
+(( $+commands[openclaw] )) && plugins+=(openclaw)
 
 source $ZSH/oh-my-zsh.sh
 
