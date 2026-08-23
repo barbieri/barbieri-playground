@@ -7,7 +7,18 @@
 (set-window-fringes nil 20 0)
 (setq initial-frame-alist '((width . 120) (height . 60)))
 
-(server-start)
+(require 'cl-lib)
+(unless (fboundp 'incf)
+  (defalias 'incf 'cl-incf))
+
+;; Compatibility for packages that use static-when (not available in older Emacs).
+(unless (fboundp 'static-when)
+  (defmacro static-when (condition &rest body)
+    `(when ,condition
+      ,@body)))
+
+;; better to start it from systemd user or launchd (macOS)
+;; (server-start)
 
 (custom-set-variables
  ;; custom-set-variables was added by Custom.
@@ -47,15 +58,15 @@
      ("nongnu" . "https://elpa.nongnu.org/nongnu/")
      ("melpa" . "https://melpa.org/packages/")))
  '(package-selected-packages
-   '(agent-shell agent-shell-macext color-theme-sanityinc-tomorrow
-		 colorful-mode company counsel counsel-projectile
-		 counsel-test diff-hl diminish doom-modeline
-		 edit-indirect exec-path-from-shell
-		 highlight-parentheses jinx jtsx lsp-ivy lsp-mode
-		 lsp-treemacs lsp-ui magit multiple-cursors
-		 prisma-ts-mode projectile projectile-git-autofetch
-		 transient treemacs treemacs-magit treemacs-nerd-icons
-		 treemacs-projectile vterm yaml-mode))
+   '(agent-shell color-theme-sanityinc-tomorrow
+                 colorful-mode company counsel counsel-projectile
+                 counsel-test diff-hl diminish doom-modeline
+                 edit-indirect exec-path-from-shell
+                 highlight-parentheses jinx jtsx lsp-ivy lsp-mode
+                 lsp-treemacs lsp-ui lua-mode magit multiple-cursors
+                 prisma-ts-mode projectile projectile-git-autofetch
+                 transient treemacs treemacs-magit treemacs-nerd-icons
+                 treemacs-projectile vterm yaml-mode))
  '(package-vc-selected-packages
    '((agent-shell-macext :url "https://github.com/cxa/agent-shell-macext")))
  '(require-final-newline 'ask)
@@ -150,6 +161,7 @@
   ("C-c 0" . treemacs-select-window)
   ("C-c t" . treemacs)
   :config
+  (require 'treemacs-mouse-interface)
   (treemacs-resize-icons 16)
   (treemacs-follow-mode t)
   (treemacs-filewatch-mode t)
@@ -335,14 +347,15 @@
 (use-package agent-shell
   :ensure t)
 
-(use-package agent-shell-macext
-  :vc (:url "https://github.com/cxa/agent-shell-macext")
-  :hook (agent-shell-mode . agent-shell-macext-setup)
-  :after agent-shell
-  :custom
-  (agent-shell-macext-file-copy-policy 'auto)    ; auto, always-copy, always-original
-  (agent-shell-macext-notifications t)           ; enable native notifications
-  (agent-shell-macext-notify-current-buffer nil)) ; nil = suppress when shell/viewport is current and Emacs is focused
+(when (eq system-type 'darwin)
+  (use-package agent-shell-macext
+    :vc (:url "https://github.com/cxa/agent-shell-macext")
+    :hook (agent-shell-mode . agent-shell-macext-setup)
+    :after agent-shell
+    :custom
+    (agent-shell-macext-file-copy-policy 'auto)    ; auto, always-copy, always-original
+    (agent-shell-macext-notifications t)           ; enable native notifications
+    (agent-shell-macext-notify-current-buffer nil))) ; nil = suppress when shell/viewport is current and Emacs is focused
 
 (use-package yaml
   :commands yaml-mode)
@@ -388,7 +401,7 @@
  ;; If you edit it by hand, you could mess it up, so be careful.
  ;; Your init file should contain only one such instance.
  ;; If there is more than one, they won't work right.
- '(default ((t (:inherit nil :extend nil :stipple nil :background "#1d1f21" :foreground "#c5c8c6" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight regular :height 130 :width normal :foundry "nil" :family "Menlo"))))
+ '(default ((t (:inherit nil :extend nil :stipple nil :background "#1d1f21" :foreground "#c5c8c6" :inverse-video nil :box nil :strike-through nil :overline nil :underline nil :slant normal :weight regular :height 110 :width normal :family "JetBrainsMono Nerd Font"))))
  '(cursor ((t (:background "magenta"))))
  '(diff-refine-added ((t (:background "#005500"))))
  '(diff-refine-removed ((t (:background "#550000"))))
@@ -415,6 +428,18 @@
  '(show-paren-match-expression ((t (:background "#444444"))))
  '(trailing-whitespace ((t (:background "#ff0000"))))
  '(whitespace-trailing ((t (:background "#ff0000" :foreground "#ffffff")))))
+
+(let (
+      ;; different font-family for each platform?
+      ;; (platform-font-family (if (eq system-type 'darwin) "SF Mono" "JetBrainsMono Nerd Font"))
+      (platform-font-family "JetBrainsMono Nerd Font")
+      ;; different font-size for each platform?
+      (platform-font-size (if (eq system-type 'darwin) 140 110))
+      )
+  (ignore-errors
+     (set-face-attribute 'default nil
+                         :family platform-font-family
+                         :height platform-font-size)))
 
 (defun whitespace-toggle-verbose ()
   "Toggle verbosity of whitespace-mode"
@@ -446,4 +471,3 @@
 (keymap-global-set "s-w" 'tab-bar-close-tab)
 (keymap-global-set "C-+" 'text-scale-increase)
 (keymap-global-set "C--" 'text-scale-decrease)
-
