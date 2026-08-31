@@ -1,8 +1,10 @@
 ;;; -*- mode: emacs-lisp -*-
 ;;; -*- lexical-binding: t -*-
 
-(when (memq window-system '(mac ns))
-  (exec-path-from-shell-initialize)) ;; get $PATH from $SHELL command
+(use-package exec-path-from-shell
+  :ensure t
+  :config
+  (exec-path-from-shell-initialize))
 
 (set-window-fringes nil 20 0)
 (setq initial-frame-alist '((width . 120) (height . 60)))
