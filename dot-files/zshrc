@@ -1,8 +1,8 @@
 # If you come from bash you might have to change your $PATH.
 export LANG=en_US.UTF-8 LC_ALL=en_US.UTF-8
+export EDITOR="emacs"
 case $(uname -s) in
     Darwin)
-        export EDITOR="$HOME/bin/emacs"
         export ANDROID_HOME="$HOME/Library/Android/sdk"
         export JAVA_HOME="/Applications/Android Studio.app/Contents/jre/Contents/Home"
         export HOMEBREW_PREFIX=/opt/homebrew
@@ -10,7 +10,6 @@ case $(uname -s) in
         export NVM_COMPLETION="$NVM_INSTALL_DIR/etc/bash_completion.d/nvm"
         ;;
     Linux)
-        export EDITOR="/usr/bin/emacs"
         export ANDROID_HOME="$HOME/Android/Sdk"
         export JAVA_HOME="/usr/lib/jvm/default"
         export HOMEBREW_PREFIX=/home/linuxbrew/.linuxbrew
@@ -165,7 +164,7 @@ HYPHEN_INSENSITIVE="true"
 # Custom plugins may be added to ~/.oh-my-zsh/custom/plugins/
 # Example format: plugins=(rails git textmate ruby lighthouse)
 # Add wisely, as too many plugins slow down shell startup.
-plugins=(git history-substring-search colorize safe-paste urltools virtualenv yarn npm docker docker-compose)
+plugins=(git emacs history-substring-search colorize safe-paste urltools virtualenv yarn npm docker docker-compose)
 (( $+commands[aws] )) && plugins+=(aws)
 
 source $ZSH/oh-my-zsh.sh
