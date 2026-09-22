@@ -1,5 +1,4 @@
-;;; -*- mode: emacs-lisp -*-
-;;; -*- lexical-binding: t -*-
+;;; -*- mode: emacs-lisp; lexical-binding: t; -*-
 
 (use-package exec-path-from-shell
   :ensure t
