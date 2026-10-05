@@ -22,10 +22,10 @@
     "docker": "run-s docker:build docker:run"
   },
   "devDependencies": {
-    "@tsconfig/node20": "^20.1.4",
-    "@types/node": "20",
-    "esbuild": "^0.23.0",
+    "@tsconfig/node20": "^20.1.10",
+    "@types/node": "^20.19.43",
+    "esbuild": "^0.28.2",
     "npm-run-all": "^4.1.5",
-    "typescript": "^5.5.4"
+    "typescript": "^7.0.2"
   }
 }
