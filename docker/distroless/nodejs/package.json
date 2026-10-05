@@ -7,9 +7,9 @@
   "author": "Gustavo Sverzut Barbieri <barbieri@profusion.mobi>",
   "license": "MIT",
   "exports": {
+    "types": "./docker-entrypoint.d.ts",
     "require": "./docker-entrypoint.min.js",
-    "import": "./docker-entrypoint.mjs",
-    "types": "./docker-entrypoint.d.ts"
+    "import": "./docker-entrypoint.mjs"
   },
   "scripts": {
     "build:esbuild": "esbuild --bundle --minify --platform=node --target=node20 docker-entrypoint.ts",
