@@ -16,15 +16,15 @@ package-mode = false
 python = "^3.9"
 
 [tool.poetry.group.dev.dependencies]
-black = "^24.10.0"
-flake8 = "^7.1.1"
-flake8-builtins = "^2.5.0"
+black = "^25.11.0"
+flake8 = "^7.3.0"
+flake8-builtins = "^3.0.0"
 flake8-colors = "^0.1.9"
-flake8-comprehensions = "^3.16.0"
+flake8-comprehensions = "^3.17.0"
 flake8-deprecated = "^2.2.1"
 flake8-module-name = "^0.2.0"
-flake8-requirements = "^2.2.1"
-flake8-tidy-imports = "^4.11.0"
+flake8-requirements = "^2.3.0"
+flake8-tidy-imports = "^4.12.0"
 
 [build-system]
 requires = ["poetry-core"]
