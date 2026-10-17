@@ -158,7 +158,12 @@ while keeping neighbors distinguishable.
   right-aligned with tabular figures.
 - **Badges**: pill, 12px/700, tinted background + matching foreground, an icon
   when it conveys state (`check_circle`, `error`, `warning`).
-- **Buttons/links**: text links use `--accent`; no underlines except on hover.
+- **Buttons/links**: text links use `--accent` and are always underlined.
+  Underline is the one affordance that survives every client: some strip CSS
+  custom properties (the color then falls back to inherited text), email has no
+  hover, and some clients override link colors entirely. Declare a literal
+  fallback before the token so var-incapable clients still get the accent:
+  `a { color: #2563eb; color: var(--accent); text-decoration: underline; }`.
 - **Spacing scale**: 4, 8, 12, 16, 24, 32 px. Prefer 8/16 for inline rhythm.
 - **Radius**: 8px small controls, 12px cards, 999px pills.
 - **Divider**: 1px `--border`, vertical margin 22px.
