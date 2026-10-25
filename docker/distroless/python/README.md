@@ -102,3 +102,11 @@ python3 ./docker_entrypoint.py \
 
 The environment variable `DEBUG=1` turns on console logging, which
 may be useful to debug variable expansion or server connections.
+
+## Development
+
+Use Python 3.10 or newer for development. The security-fixed Black formatter
+requires Python 3.10. The entrypoint itself still supports Python 3.9.
+
+Run `poetry install`, then `poetry run bash check.sh` to format and lint the
+entrypoint.
