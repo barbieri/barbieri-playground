@@ -16,7 +16,7 @@ package-mode = false
 python = "^3.9"
 
 [tool.poetry.group.dev.dependencies]
-black = "^25.11.0"
+black = { version = "^26.10.1", python = ">=3.10" }
 flake8 = "^7.3.0"
 flake8-builtins = "^3.0.0"
 flake8-colors = "^0.1.9"
